@@ -1,0 +1,21 @@
+# ESP-IDF build output & fetched dependencies
+**/build/
+**/managed_components/
+
+# Tooling caches & sdkconfig backups
+**/.cache/
+**/sdkconfig.old
+
+# Vendored upstream Waveshare demo (skipped — large, externally available)
+examples/
+
+# Internal-only: vendor datasheets & initial scratch notes (not for public repo)
+docs/
+details.md
+
+# Large vendored archives
+*.zip
+
+# macOS cruft
+.DS_Store
+**/.DS_Store
