@@ -8,7 +8,8 @@ name: Release firmware installer
 #   raw.githubusercontent.com/holystack-dev/shema/main/installer/firmware.bin
 # so committing to main is what actually goes live — no GitHub Pages involved.
 #
-# Release flow: merge to main -> create the tag at main's HEAD -> push the tag:
+# Runs inside the official ESP-IDF image (reproducible, and avoids the flaky
+# esp-idf-ci-action wrapper). Release flow: merge to main, then tag main's HEAD:
 #   git tag v1.1.0 && git push origin v1.1.0
 
 on:
@@ -26,6 +27,7 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
+    container: espressif/idf:v5.3.2
     steps:
       # Check out main (not the detached tag) so the freshly-built artifact can be
       # committed straight back onto main. Create the release tag at main's HEAD.
@@ -34,22 +36,18 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      # Build AND merge inside the IDF container so the esptool that produced
-      # flasher_args.json is the one that consumes it.
-      - name: Build & merge firmware (ESP-IDF v5.3.2)
-        uses: espressif/esp-idf-ci-action@v1
-        with:
-          esp_idf_version: v5.3.2
-          target: esp32s3
-          path: audio_bible
-          command: |
-            idf.py build
-            # Merge via idf.py (esptool.py isn't on PATH in the CI container). It uses the
-            # build's own flasher args, so offsets/flash settings match the built layout.
-            # Output lands at build/firmware.bin.
-            idf.py merge-bin -o firmware.bin
+      - name: Build & merge firmware
+        shell: bash
+        run: |
+          . "$IDF_PATH/export.sh"
+          cd audio_bible
+          idf.py build
+          # Merge using the build's own flasher args (offsets + flash mode/size/freq);
+          # output lands at build/firmware.bin.
+          idf.py merge-bin -o firmware.bin
 
       - name: Place firmware + stamp manifest from the tag
+        shell: bash
         run: |
           TAG="${GITHUB_REF_NAME:-dev}"
           VERSION="${TAG#v}"        # strip a leading v for a clean semver in the manifest
@@ -57,8 +55,10 @@ jobs:
           sed -i "s/\"version\": *\"[^\"]*\"/\"version\": \"${VERSION}\"/" installer/manifest.json
 
       - name: Commit installer artifacts to main
+        shell: bash
         run: |
           TAG="${GITHUB_REF_NAME:-dev}"
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add installer/firmware.bin installer/manifest.json
