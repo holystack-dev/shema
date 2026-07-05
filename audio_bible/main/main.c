@@ -18,6 +18,8 @@
 #include "esp_lcd_panel_ops.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
+#include "esp_sleep.h"
+#include "esp_system.h"
 #include "lvgl.h"
 #include "esp_lcd_st77916.h"
 #include <dirent.h>
@@ -46,8 +48,6 @@ static SemaphoreHandle_t lvgl_flush_sem;
 static uint16_t *lvgl_dma_buf;
 static esp_lcd_panel_handle_t g_panel;   // for panel sleep (disp on/off)
 static volatile bool g_disp_sleeping;    // true => screen off, panel blanked, skip flush
-
-QueueHandle_t app_touch_data_queue;
 
 // Waveshare ST77916 vendor init sequence (round 1.85" panel). Used when the
 // panel-variant probe on register 0x04 reports the "case 2" signature.
@@ -250,8 +250,6 @@ static void lvgl_touch_cb(lv_indev_drv_t *drv, lv_indev_data_t *data)
         data->state = LV_INDEV_STATE_PR;
         data->point.x = x;
         data->point.y = y;
-        app_touch_t t = {.x = x, .y = y};
-        xQueueSend(app_touch_data_queue, &t, 0);
     } else {
         data->state = LV_INDEV_STATE_REL;
     }
@@ -334,10 +332,17 @@ static void display_init(void)
     uint8_t id[4] = {0};
     int rd_cmd = (0x04 & 0xff) << 8;
     rd_cmd |= LCD_OPCODE_READ_CMD << 24;
-    if (esp_lcd_panel_io_rx_param(io, rd_cmd, id, sizeof(id)) == ESP_OK)
+    // Retry once: if this probe fails, a "case 2" panel silently gets the driver-default
+    // init (wrong gamma / garbled) for the whole boot, so it's worth a second attempt (F-42).
+    esp_err_t idrc = esp_lcd_panel_io_rx_param(io, rd_cmd, id, sizeof(id));
+    if (idrc != ESP_OK) {
+        vTaskDelay(pdMS_TO_TICKS(10));
+        idrc = esp_lcd_panel_io_rx_param(io, rd_cmd, id, sizeof(id));
+    }
+    if (idrc == ESP_OK)
         ESP_LOGI(TAG, "ST77916 ID(0x04): %02x %02x %02x %02x", id[0], id[1], id[2], id[3]);
     else
-        ESP_LOGW(TAG, "ST77916 ID read failed");
+        ESP_LOGW(TAG, "ST77916 ID read failed (falling back to default init)");
     ESP_ERROR_CHECK(esp_lcd_panel_io_del(io));
 
     // Reopen at full speed with the flush-done callback for LVGL.
@@ -430,18 +435,23 @@ void app_main(void)
     // frame), so silence the i2c driver's per-read error logging.
     esp_log_level_set("i2c.master", ESP_LOG_NONE);
 
-    app_touch_data_queue = xQueueCreate(10, sizeof(app_touch_t));
     lvgl_mux = xSemaphoreCreateRecursiveMutex();
     assert(lvgl_mux);
 
     i2c_master_Init();   // single shared I2C bus + TCA9554 expander — first
     display_init();
-    xTaskCreatePinnedToCore(lvgl_port_task, "lvgl", 6 * 1024, NULL, 4, NULL, 0);
+    // 8 KB (was 6 KB): the LVGL task runs full rendering, deep page builds, ui_tick's
+    // NVS commit, FATFS opendir, and the app_log vprintf hook's stack buffer (F-21).
+    xTaskCreatePinnedToCore(lvgl_port_task, "lvgl", 8 * 1024, NULL, 4, NULL, 0);
 
     app_store_init();    // NVS (settings, favourites, resume)
     app_power_init();    // amp (GPIO15), ADC, buttons, backlight
     _sdcard_init();      // mount /sdcard (FAT32)
     app_log_init();      // mirror ESP_LOG -> /sdcard/LOG.TXT (post-mortem debug)
+    // Record why we came up — a deep-sleep (EXT1/BOOT) wake vs a brownout/watchdog reset
+    // is exactly what's needed to diagnose the worn-BOOT-button "won't turn on" reports.
+    ESP_LOGI(TAG, "boot: reset_reason=%d wakeup_cause=%d",
+             (int)esp_reset_reason(), (int)esp_sleep_get_wakeup_cause());
     sd_list_root();
 
     if (app_player_init() != ESP_OK) {

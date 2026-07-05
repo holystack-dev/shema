@@ -19,9 +19,7 @@ static Button boot_btn;
 #define boot_btn_active  0
 
 static void on_boot_single_click(Button* btn_handle);
-static void on_boot_double_click(Button* btn_handle);
 static void on_boot_long_press_start(Button* btn_handle);
-static void on_boot_press_up(Button* btn_handle);
 
 static void clock_task_callback(void *arg)
 {
@@ -56,9 +54,7 @@ void button_Init(void)
 
   button_init(&boot_btn, read_button_GPIO, boot_btn_active, boot_btn_id);
   button_attach(&boot_btn, BTN_SINGLE_CLICK, on_boot_single_click);
-  button_attach(&boot_btn, BTN_PRESS_REPEAT, on_boot_double_click);
   button_attach(&boot_btn, BTN_LONG_PRESS_START, on_boot_long_press_start);
-  button_attach(&boot_btn, BTN_PRESS_UP, on_boot_press_up);
 
   const esp_timer_create_args_t clock_tick_timer_args =
   {
@@ -72,36 +68,14 @@ void button_Init(void)
   button_start(&boot_btn);
 }
 
-/* single click -> home/wake */
+/* single click -> home/wake (boot_groups bit 0) */
 static void on_boot_single_click(Button* btn_handle)
 {
   xEventGroupSetBits(boot_groups, set_bit_button(0));
 }
 
-/* double click (unused) */
-static void on_boot_double_click(Button* btn_handle)
-{
-  xEventGroupSetBits(boot_groups, set_bit_button(1));
-}
-
-/* long press -> power off */
+/* long press -> power off (pwr_groups bit 1) */
 static void on_boot_long_press_start(Button* btn_handle)
 {
   xEventGroupSetBits(pwr_groups, set_bit_button(1));
-}
-
-/* release */
-static void on_boot_press_up(Button* btn_handle)
-{
-  xEventGroupSetBits(boot_groups, set_bit_button(3));
-}
-
-uint8_t user_button_get_repeat_count(void)
-{
-  return (button_get_repeat_count(&boot_btn));
-}
-
-uint8_t user_boot_get_repeat_count(void)
-{
-  return (button_get_repeat_count(&boot_btn));
 }

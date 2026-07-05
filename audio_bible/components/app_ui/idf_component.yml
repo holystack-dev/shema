@@ -1,0 +1,4 @@
+## Managed dependency for this component: the LVGL graphics library the UI is built on
+## (declared here so app_ui is self-contained, not reliant on main's dependency list).
+dependencies:
+  lvgl/lvgl: "~8.3.0"

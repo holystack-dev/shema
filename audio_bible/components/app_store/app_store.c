@@ -3,9 +3,22 @@
 #include "esp_log.h"
 #include "nvs_flash.h"
 #include "nvs.h"
+#include "bible_data.h"
 
 static const char *TAG = "store";
 static const char *NS = "bible";
+
+static void pl_key(char *buf, int pl);   // defined below; used by the init validator
+
+// A (book,chapter) is usable only if it maps to a real book and an in-range chapter.
+// Every UI path indexes BIBLE_BOOKS[ref.book_idx], so a ref loaded from NVS that was
+// written by a different firmware revision (or corrupted) must be rejected here rather
+// than dereferenced as a wild pointer later (F-04).
+static bool ref_valid(int book_idx, int chapter)
+{
+    return book_idx >= 0 && book_idx < BIBLE_BOOK_COUNT
+        && chapter >= 1 && chapter <= BIBLE_BOOKS[book_idx].chapter_count;
+}
 
 // in-memory caches (write-through)
 static track_ref_t fav[STORE_MAX_TRACKS];
@@ -20,7 +33,8 @@ static pl_meta_t pl_meta;
 static nvs_handle_t open_rw(void)
 {
     nvs_handle_t h = 0;
-    nvs_open(NS, NVS_READWRITE, &h);
+    esp_err_t e = nvs_open(NS, NVS_READWRITE, &h);
+    if (e != ESP_OK) ESP_LOGW(TAG, "nvs_open failed: %s", esp_err_to_name(e));
     return h;
 }
 
@@ -37,8 +51,9 @@ static void set_i32(const char *k, int32_t v)
 {
     nvs_handle_t h = open_rw();
     if (!h) return;
-    nvs_set_i32(h, k, v);
-    nvs_commit(h);
+    esp_err_t e = nvs_set_i32(h, k, v);
+    if (e == ESP_OK) e = nvs_commit(h);
+    if (e != ESP_OK) ESP_LOGW(TAG, "nvs set '%s' failed: %s", k, esp_err_to_name(e));
     nvs_close(h);
 }
 
@@ -55,8 +70,10 @@ static void blob_save(const char *k, const void *buf, size_t len)
 {
     nvs_handle_t h = open_rw();
     if (!h) return;
-    nvs_set_blob(h, k, buf, len);
-    nvs_commit(h);
+    esp_err_t e = nvs_set_blob(h, k, buf, len);
+    if (e == ESP_OK) e = nvs_commit(h);
+    if (e != ESP_OK) ESP_LOGW(TAG, "nvs blob '%s' (%u B) failed: %s",
+                              k, (unsigned)len, esp_err_to_name(e));
     nvs_close(h);
 }
 
@@ -70,9 +87,30 @@ void app_store_init(void)
     size_t len = 0;
     blob_load("fav", fav, sizeof(fav), &len);
     fav_n = (int)(len / sizeof(track_ref_t));
+    if (fav_n > STORE_MAX_TRACKS) fav_n = STORE_MAX_TRACKS;
+    // Drop any favourite that doesn't map to a real book/chapter, then persist the
+    // cleaned list so a corrupt or foreign-firmware blob can never reach the UI's
+    // BIBLE_BOOKS[] indexing (F-04).
+    int fw = 0;
+    for (int i = 0; i < fav_n; i++)
+        if (ref_valid(fav[i].book_idx, fav[i].chapter)) fav[fw++] = fav[i];
+    if (fw != fav_n) { fav_n = fw; blob_save("fav", fav, fav_n * sizeof(track_ref_t)); }
+
     blob_load("pl_meta", &pl_meta, sizeof(pl_meta), &len);
     if (len != sizeof(pl_meta)) { memset(&pl_meta, 0, sizeof(pl_meta)); }
     if (pl_meta.count > STORE_MAX_PLAYLISTS) pl_meta.count = 0;
+    // Same sanitising for each playlist's track blob.
+    for (int pl = 0; pl < pl_meta.count; pl++) {
+        track_ref_t tmp[STORE_MAX_TRACKS]; size_t plen;
+        char k[8]; pl_key(k, pl);
+        blob_load(k, tmp, sizeof(tmp), &plen);
+        int n = (int)(plen / sizeof(track_ref_t));
+        if (n > STORE_MAX_TRACKS) n = STORE_MAX_TRACKS;
+        int pw = 0;
+        for (int i = 0; i < n; i++)
+            if (ref_valid(tmp[i].book_idx, tmp[i].chapter)) tmp[pw++] = tmp[i];
+        if (pw != n) blob_save(k, tmp, pw * sizeof(track_ref_t));
+    }
     ESP_LOGI(TAG, "store ready: %d favourites, %d playlists", fav_n, pl_meta.count);
 }
 
@@ -107,7 +145,8 @@ void app_store_set_version(const char *path)
     nvs_handle_t h = open_rw();
     if (!h) return;
     nvs_set_str(h, "ver", path);
-    nvs_commit(h);
+    esp_err_t e = nvs_commit(h);
+    if (e != ESP_OK) ESP_LOGW(TAG, "nvs version save failed: %s", esp_err_to_name(e));
     nvs_close(h);
 }
 
@@ -115,9 +154,12 @@ void app_store_set_version(const char *path)
 bool app_store_get_last(int *book_idx, int *chapter, uint32_t *pos_ms)
 {
     int b = get_i32("last_b", -1);
-    if (b < 0) return false;
+    if (b < 0 || b >= BIBLE_BOOK_COUNT) return false;   // reject stale/foreign index (F-04)
+    int c = get_i32("last_c", 1);
+    int cc = BIBLE_BOOKS[b].chapter_count;
+    if (c < 1) c = 1; else if (c > cc) c = cc;          // clamp chapter into range
     *book_idx = b;
-    *chapter  = get_i32("last_c", 1);
+    *chapter  = c;
     *pos_ms   = (uint32_t)get_i32("last_ms", 0);
     return true;
 }
@@ -128,7 +170,8 @@ void app_store_set_last(int book_idx, int chapter, uint32_t pos_ms)
     nvs_set_i32(h, "last_b", book_idx);
     nvs_set_i32(h, "last_c", chapter);
     nvs_set_i32(h, "last_ms", (int32_t)pos_ms);
-    nvs_commit(h);
+    esp_err_t e = nvs_commit(h);
+    if (e != ESP_OK) ESP_LOGW(TAG, "nvs resume save failed: %s", esp_err_to_name(e));
     nvs_close(h);
 }
 

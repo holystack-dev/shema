@@ -56,6 +56,7 @@ enum { PAGE_HOME, PAGE_BOOKS, PAGE_CHAPTERS, PAGE_PLAYER, PAGE_LIST_DETAIL, PAGE
 
 typedef struct { int page; int ctx; } nav_entry_t;
 static nav_entry_t nav_stack[10];
+#define NAV_MAX ((int)(sizeof(nav_stack) / sizeof(nav_stack[0])))
 static int nav_sp;
 static int cur_page;
 static lv_scr_load_anim_t g_anim = LV_SCR_LOAD_ANIM_NONE;
@@ -74,6 +75,7 @@ static lv_obj_t *sb_batt, *mb_box, *mb_title, *mb_play, *mb_prog;
 static lv_obj_t *modal;
 
 static uint32_t sleep_deadline_ms;
+static bool     sleep_active;        // separate flag: a deadline of 0 is a valid time (F-39)
 static uint32_t last_save_ms;
 static volatile bool go_home_req;
 
@@ -81,6 +83,27 @@ static void build_page(int page, int ctx);
 static void build_list_detail(int which);
 static void make_top_bars(void);
 static void apply_accent(uint32_t hex);
+
+// ---- ui_tick change-detection (F-09) ----
+// lv_label_set_text always invalidates in LVGL 8, and with full_refresh=1 any
+// invalidation forces a full 360x360 render + chunked flush. ui_tick runs at 2.5 Hz,
+// so re-setting unchanged text/colour/visibility would repaint the whole screen forever
+// (even all night behind an "off" panel). Cache the last applied value and only touch a
+// widget when it actually changes. Caches are cleared on every page (re)build and on the
+// screen-off -> on edge, since those recreate or repaint the widgets.
+static char lc_batt[24], lc_mbtitle[40], lc_mbplay[8];
+static char lc_pwtitle[40], lc_pwsub[16], lc_pwfav[8], lc_pwplay[8], lc_pwcur[16], lc_pwtot[16];
+static int  lc_fav = -1, lc_sleep = -1, lc_mbvis = -1;   // colour/visibility state caches
+static void reset_label_caches(void)
+{
+    lc_batt[0] = lc_mbtitle[0] = lc_mbplay[0] = 0;
+    lc_pwtitle[0] = lc_pwsub[0] = lc_pwfav[0] = lc_pwplay[0] = lc_pwcur[0] = lc_pwtot[0] = 0;
+    lc_fav = lc_sleep = lc_mbvis = -1;
+}
+static void label_set(lv_obj_t *o, char *cache, size_t cachesz, const char *s)
+{
+    if (strcmp(cache, s) != 0) { snprintf(cache, cachesz, "%s", s); lv_label_set_text(o, s); }
+}
 
 // ---------- small helpers ----------
 static void encode_play(lv_obj_t *o, int b, int c) { lv_obj_set_user_data(o, (void *)(intptr_t)(b * 1000 + c)); }
@@ -123,7 +146,7 @@ static void nav_back(void)
 static void nav_push(int page, int ctx)
 {
     app_power_user_activity();
-    if (nav_sp < 9) { nav_sp++; nav_stack[nav_sp] = (nav_entry_t){page, ctx}; }
+    if (nav_sp < NAV_MAX - 1) { nav_sp++; nav_stack[nav_sp] = (nav_entry_t){page, ctx}; }
     g_anim = LV_SCR_LOAD_ANIM_MOVE_LEFT;
     build_page(page, ctx);
 }
@@ -466,7 +489,12 @@ static void close_modal(void) { if (modal) { lv_obj_del(modal); modal = NULL; } 
 static void modal_bg_cb(lv_event_t *e) { if (lv_event_get_target(e) == modal) close_modal(); }
 static void set_sleep(int minutes)
 {
-    sleep_deadline_ms = minutes ? (esp_log_timestamp() + (uint32_t)minutes * 60u * 1000u) : 0;
+    if (minutes > 0) {
+        sleep_deadline_ms = esp_log_timestamp() + (uint32_t)minutes * 60u * 1000u;
+        sleep_active = true;
+    } else {
+        sleep_active = false;
+    }
 }
 static void sleep_opt_cb(lv_event_t *e)
 {
@@ -525,8 +553,9 @@ static void p_seek_cb(lv_event_t *e)
 static void p_vol_cb(lv_event_t *e)
 {
     int v = lv_slider_get_value(lv_event_get_target(e));
-    app_player_set_volume(v);
-    app_store_set_volume(v);
+    app_player_set_volume(v);                        // live-apply every drag step
+    if (lv_event_get_code(e) == LV_EVENT_RELEASED)
+        app_store_set_volume(v);                     // persist once, on release (F-08)
 }
 static void p_fav_cb(lv_event_t *e)
 {
@@ -626,6 +655,7 @@ static void build_player(void)
     lv_obj_set_style_bg_color(pw_vol, lv_color_hex(g_accent_hex), LV_PART_INDICATOR);
     lv_obj_set_style_bg_color(pw_vol, lv_color_hex(g_accent_hex), LV_PART_KNOB);
     lv_obj_add_event_cb(pw_vol, p_vol_cb, LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_add_event_cb(pw_vol, p_vol_cb, LV_EVENT_RELEASED, NULL);   // persist on release (F-08)
     lv_obj_t *vicon = lbl(scr, LV_SYMBOL_VOLUME_MAX, &lv_font_montserrat_14, COL_SUB);
     lv_obj_align_to(vicon, pw_vol, LV_ALIGN_OUT_LEFT_MID, -10, 0);
 
@@ -666,6 +696,7 @@ static void detail_item_cb(lv_event_t *e)
 }
 static void detail_remove_cb(lv_event_t *e)
 {
+    if (!tap_is_clean(e)) return;   // a flick starting on the trash icon must not delete (F-37)
     int i = (int)(intptr_t)lv_event_get_user_data(e);
     track_ref_t tr;
     if (detail_get(detail_which, i, &tr)) {
@@ -710,7 +741,7 @@ static void build_list_detail(int which)
             lv_obj_set_style_bg_color(rm, lv_color_hex(0xC0392B), 0);
             lv_obj_set_style_radius(rm, 10, 0);
             lv_obj_center(lbl(rm, LV_SYMBOL_TRASH, &lv_font_montserrat_16, COL_TEXT));
-            lv_obj_add_event_cb(rm, detail_remove_cb, LV_EVENT_CLICKED, (void *)(intptr_t)i);
+            lv_obj_add_event_cb(rm, detail_remove_cb, LV_EVENT_ALL, (void *)(intptr_t)i);   // ALL: tap_is_clean (F-37)
         } else {
             encode_play(it, tr.book_idx, tr.chapter);
             lv_obj_add_event_cb(it, detail_item_cb, LV_EVENT_ALL, NULL);
@@ -730,7 +761,9 @@ static void build_list_detail(int which)
 static void set_bright_cb(lv_event_t *e)
 {
     int v = lv_slider_get_value(lv_event_get_target(e));
-    app_power_set_brightness(v); app_store_set_brightness(v);
+    app_power_set_brightness(v);                     // live-apply every drag step
+    if (lv_event_get_code(e) == LV_EVENT_RELEASED)
+        app_store_set_brightness(v);                 // persist once, on release (F-08)
 }
 static void set_repeat_cb(lv_event_t *e)
 {
@@ -846,8 +879,9 @@ static void version_row_cb(lv_event_t *e)
     if (!tap_is_clean(e)) return;
     int n = app_player_versions();
     if (n <= 0) return;
-    if (n > 12) n = 12;
     static const char *labels[12];
+    int cap = (int)(sizeof(labels) / sizeof(labels[0]));
+    if (n > cap) { ESP_LOGW(TAG, "version picker: %d versions, showing first %d", n, cap); n = cap; }
     for (int i = 0; i < n; i++) labels[i] = app_player_version_name(i);
     open_picker("Version", labels, n, g_version_idx, apply_version);
 }
@@ -887,6 +921,7 @@ static void build_settings(void)
     lv_obj_set_style_bg_color(bs, lv_color_hex(g_accent_hex), LV_PART_INDICATOR);
     lv_obj_set_style_bg_color(bs, lv_color_hex(g_accent_hex), LV_PART_KNOB);
     lv_obj_add_event_cb(bs, set_bright_cb, LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_add_event_cb(bs, set_bright_cb, LV_EVENT_RELEASED, NULL);   // persist on release (F-08)
 
     lv_obj_t *rc = setting_card(c, LV_SYMBOL_LOOP, "Repeat all");
     lv_obj_t *sw = lv_switch_create(rc);
@@ -924,6 +959,7 @@ static void build_settings(void)
 static void build_page(int page, int ctx)
 {
     close_modal();
+    reset_label_caches();   // rebuilt widgets must be refreshed on the next tick (F-09)
     cur_page = page;
     pw_title = NULL;
     switch (page) {
@@ -944,7 +980,8 @@ static void apply_accent(uint32_t hex)
     lv_theme_t *th = lv_theme_default_init(disp, lv_color_hex(hex), lv_color_hex(0x6b7280),
                                            true, &lv_font_montserrat_16);
     lv_disp_set_theme(disp, th);
-    lv_obj_clean(lv_layer_top());
+    close_modal();                  // delete + NULL any open modal BEFORE clearing the layer,
+    lv_obj_clean(lv_layer_top());   // else lv_obj_clean frees it and leaves `modal` dangling (F-41)
     make_top_bars();
     g_anim = LV_SCR_LOAD_ANIM_NONE;
     build_page(nav_stack[nav_sp].page, nav_stack[nav_sp].ctx);
@@ -1024,60 +1061,81 @@ static void ui_tick(lv_timer_t *t)
     (void)t;
     if (go_home_req) { go_home_req = false; nav_reset(PAGE_HOME, 0); }
 
-    int pct = app_power_battery_pct();
-    const char *sym = pct > 80 ? LV_SYMBOL_BATTERY_FULL : pct > 55 ? LV_SYMBOL_BATTERY_3 :
-                      pct > 30 ? LV_SYMBOL_BATTERY_2 : pct > 10 ? LV_SYMBOL_BATTERY_1 : LV_SYMBOL_BATTERY_EMPTY;
-    char b[24];
-    snprintf(b, sizeof(b), "%s %d%%", sym, pct);
-    lv_label_set_text(sb_batt, b);
-
     player_status_t st;
     app_player_get_status(&st);
     bool playing = (st.state == PLAYER_PLAYING);
-    int prog = (st.dur_ms > 0) ? (int)((uint64_t)st.pos_ms * 1000 / st.dur_ms) : 0;
 
-    // now-playing bar (pill + rim arc) shown only on Home
-    if (cur_page == PAGE_HOME) { lv_obj_clear_flag(mb_box, LV_OBJ_FLAG_HIDDEN); lv_obj_clear_flag(mb_prog, LV_OBJ_FLAG_HIDDEN); }
-    else { lv_obj_add_flag(mb_box, LV_OBJ_FLAG_HIDDEN); lv_obj_add_flag(mb_prog, LV_OBJ_FLAG_HIDDEN); }
-    lv_label_set_text(mb_play, playing ? LV_SYMBOL_PAUSE : LV_SYMBOL_PLAY);
-    lv_arc_set_value(mb_prog, prog);
-    if (st.book_idx >= 0) {
-        char m[40]; snprintf(m, sizeof(m), "%s %d", BIBLE_BOOKS[st.book_idx].name, st.chapter);
-        lv_label_set_text(mb_title, m);
-    } else {
-        int lb, lc; uint32_t lp;
-        if (app_store_get_last(&lb, &lc, &lp)) { char m[40]; snprintf(m, sizeof(m), "%s %d", BIBLE_BOOKS[lb].name, lc); lv_label_set_text(mb_title, m); }
-        else lv_label_set_text(mb_title, "Nothing playing");
-    }
+    // Skip all rendering while the panel is off: otherwise LVGL still renders full frames
+    // to PSRAM at 2.5 Hz (all night during screen-off playback). The panel repaints on
+    // wake via bible_display_sleep; refresh the caches on the off->on edge so the first
+    // visible tick redraws everything (F-09).
+    bool off = app_power_screen_is_off();
+    static bool was_off;
+    if (was_off && !off) reset_label_caches();
+    was_off = off;
 
-    // player watch-face live update
-    if (cur_page == PAGE_PLAYER && pw_title) {
-        if (st.book_idx >= 0) {
-            lv_label_set_text(pw_title, BIBLE_BOOKS[st.book_idx].name);
-            char s[16]; snprintf(s, sizeof(s), "Chapter %d", st.chapter);
-            lv_label_set_text(pw_sub, s);
-            bool isfav = app_store_is_fav(st.book_idx, st.chapter);
-            lv_label_set_text(pw_fav, isfav ? LV_SYMBOL_OK : LV_SYMBOL_PLUS);  // tick when saved, + to add
-            lv_obj_set_style_text_color(pw_fav, lv_color_hex(isfav ? g_accent_hex : COL_SUB), 0);
+    if (!off) {
+        int pct = app_power_battery_pct();
+        const char *sym = pct > 80 ? LV_SYMBOL_BATTERY_FULL : pct > 55 ? LV_SYMBOL_BATTERY_3 :
+                          pct > 30 ? LV_SYMBOL_BATTERY_2 : pct > 10 ? LV_SYMBOL_BATTERY_1 : LV_SYMBOL_BATTERY_EMPTY;
+        char b[24];
+        snprintf(b, sizeof(b), "%s %d%%", sym, pct);
+        label_set(sb_batt, lc_batt, sizeof(lc_batt), b);
+
+        int prog = (st.dur_ms > 0) ? (int)((uint64_t)st.pos_ms * 1000 / st.dur_ms) : 0;
+
+        // now-playing bar (pill + rim arc) shown only on Home — toggle only on change,
+        // since add/clear HIDDEN invalidates (and full_refresh makes that a full frame).
+        int mbvis = (cur_page == PAGE_HOME) ? 1 : 0;
+        if (lc_mbvis != mbvis) {
+            lc_mbvis = mbvis;
+            if (mbvis) { lv_obj_clear_flag(mb_box, LV_OBJ_FLAG_HIDDEN); lv_obj_clear_flag(mb_prog, LV_OBJ_FLAG_HIDDEN); }
+            else       { lv_obj_add_flag(mb_box, LV_OBJ_FLAG_HIDDEN);  lv_obj_add_flag(mb_prog, LV_OBJ_FLAG_HIDDEN); }
         }
-        lv_obj_set_style_text_color(pw_sleep, lv_color_hex(sleep_deadline_ms ? g_accent_hex : COL_SUB), 0);
-        lv_label_set_text(pw_play, playing ? LV_SYMBOL_PAUSE : LV_SYMBOL_PLAY);
-        lv_arc_set_value(pw_arc, prog);
-        if (!lv_obj_has_state(pw_seek, LV_STATE_PRESSED)) lv_slider_set_value(pw_seek, prog, LV_ANIM_OFF);
-        char a[16], d[16];
-        fmt_time(a, sizeof(a), st.pos_ms);
-        fmt_time(d, sizeof(d), st.dur_ms);
-        lv_label_set_text(pw_cur, a);
-        lv_label_set_text(pw_tot, d);
+        label_set(mb_play, lc_mbplay, sizeof(lc_mbplay), playing ? LV_SYMBOL_PAUSE : LV_SYMBOL_PLAY);
+        lv_arc_set_value(mb_prog, prog);   // lv_arc_set_value early-returns if unchanged
+        if (st.book_idx >= 0) {
+            char m[40]; snprintf(m, sizeof(m), "%s %d", BIBLE_BOOKS[st.book_idx].name, st.chapter);
+            label_set(mb_title, lc_mbtitle, sizeof(lc_mbtitle), m);
+        } else {
+            int lb, lc; uint32_t lp;
+            if (app_store_get_last(&lb, &lc, &lp)) { char m[40]; snprintf(m, sizeof(m), "%s %d", BIBLE_BOOKS[lb].name, lc); label_set(mb_title, lc_mbtitle, sizeof(lc_mbtitle), m); }
+            else label_set(mb_title, lc_mbtitle, sizeof(lc_mbtitle), "Nothing playing");
+        }
+
+        // player watch-face live update
+        if (cur_page == PAGE_PLAYER && pw_title) {
+            if (st.book_idx >= 0) {
+                label_set(pw_title, lc_pwtitle, sizeof(lc_pwtitle), BIBLE_BOOKS[st.book_idx].name);
+                char s[16]; snprintf(s, sizeof(s), "Chapter %d", st.chapter);
+                label_set(pw_sub, lc_pwsub, sizeof(lc_pwsub), s);
+                int isfav = app_store_is_fav(st.book_idx, st.chapter) ? 1 : 0;
+                label_set(pw_fav, lc_pwfav, sizeof(lc_pwfav), isfav ? LV_SYMBOL_OK : LV_SYMBOL_PLUS);
+                if (lc_fav != isfav) { lc_fav = isfav; lv_obj_set_style_text_color(pw_fav, lv_color_hex(isfav ? g_accent_hex : COL_SUB), 0); }
+            }
+            int slp = sleep_active ? 1 : 0;
+            if (lc_sleep != slp) { lc_sleep = slp; lv_obj_set_style_text_color(pw_sleep, lv_color_hex(slp ? g_accent_hex : COL_SUB), 0); }
+            label_set(pw_play, lc_pwplay, sizeof(lc_pwplay), playing ? LV_SYMBOL_PAUSE : LV_SYMBOL_PLAY);
+            lv_arc_set_value(pw_arc, prog);
+            if (!lv_obj_has_state(pw_seek, LV_STATE_PRESSED)) lv_slider_set_value(pw_seek, prog, LV_ANIM_OFF);
+            char a[16], d[16];
+            fmt_time(a, sizeof(a), st.pos_ms);
+            fmt_time(d, sizeof(d), st.dur_ms);
+            label_set(pw_cur, lc_pwcur, sizeof(lc_pwcur), a);
+            label_set(pw_tot, lc_pwtot, sizeof(lc_pwtot), d);
+        }
     }
 
+    // These run even while the panel is off (audio may still be playing).
     uint32_t nowms = esp_log_timestamp();
-    if (playing && nowms - last_save_ms > 5000) {
+    if (playing && (int32_t)(nowms - last_save_ms) > 5000) {
         last_save_ms = nowms;
         app_store_set_last(st.book_idx, st.chapter, st.pos_ms);
     }
-    if (sleep_deadline_ms && nowms >= sleep_deadline_ms) {
-        sleep_deadline_ms = 0;
+    // Signed-delta comparison so the deadline is wrap-safe and a deadline of 0 is a valid
+    // time rather than a "disabled" sentinel (F-39).
+    if (sleep_active && (int32_t)(nowms - sleep_deadline_ms) >= 0) {
+        sleep_active = false;
         if (st.state == PLAYER_PLAYING) app_player_toggle_pause();
     }
 }

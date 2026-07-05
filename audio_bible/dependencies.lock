@@ -85,6 +85,6 @@ direct_dependencies:
 - espressif/esp_lcd_st77916
 - idf
 - lvgl/lvgl
-manifest_hash: 33e83d2309b0d5489946e3ef628c9261766219098d8de7cfc6bf1f14a04f4181
+manifest_hash: e018b3e92b8e0f89d222e81c7292ef2ae0661a236900e8b71c6ded6f05a78791
 target: esp32s3
 version: 2.0.0

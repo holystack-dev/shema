@@ -3,11 +3,13 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
+#include "freertos/semphr.h"
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "esp_sleep.h"
 #include "esp_heap_caps.h"
 #include "driver/gpio.h"
+#include "driver/rtc_io.h"
 
 #include "user_config.h"
 #include "adc_bsp.h"
@@ -16,6 +18,7 @@
 #include "app_store.h"
 #include "app_player.h"
 #include "app_log.h"
+#include "sdcard_bsp.h"
 
 static const char *TAG = "power";
 // 1.85C V2 has no software power latch — "power off" just deep-sleeps and the
@@ -25,10 +28,15 @@ static const char *TAG = "power";
 static power_btn_cb_t boot_cb;
 static volatile bool   idle_off_en;
 static volatile int    idle_timeout_s = 300;
-static volatile uint64_t last_activity_ms;
+// 32-bit so the cross-task read/write is a single atomic word on the S3 (a 64-bit value
+// can tear across the low-word carry and spuriously blank/power-off). ms wraps every
+// ~49.7 days, but the idle delta is computed with uint32_t modular subtraction, so the
+// wrap is harmless (F-30).
+static volatile uint32_t last_activity_ms;
 static int             cur_brightness = 80;
 static volatile bool   screen_off;
 static volatile int    screen_timeout_s = 30;   // auto screen-off; 0 = never
+static SemaphoreHandle_t screen_mux;            // serialises screen_set_off (F-10)
 static display_sleep_cb_t disp_sleep_cb;
 // Speaker amp is on when audio plays OR the screen is on (for pop-free UI clicks);
 // it drops only once the screen is off AND nothing is playing.
@@ -46,23 +54,29 @@ static void amp_apply(void)
     gpio_set_level(EXAMPLE_PIN_NUM_AMP_EN, (amp_play || amp_screen) ? 1 : 0);
 }
 
+// idle_task (prio 2) and button_task (prio 4, via app_power_wake) both call this on
+// different cores, so the check-then-act on screen_off must be atomic — otherwise
+// idle_task can blank the panel just as button_task finishes waking it (F-10).
 static void screen_set_off(bool off)
 {
-    if (off == screen_off) return;
-    screen_off = off;
-    if (off) {
-        setUpduty(0);                            // backlight off first (instant black)
-        if (disp_sleep_cb) disp_sleep_cb(true);  // skip flush work while dark
-        amp_screen = false; amp_apply();         // drop amp if nothing is playing
-    } else {
-        amp_screen = true; amp_apply();          // amp on before anything plays
-        if (disp_sleep_cb) disp_sleep_cb(false); // restore flush
-        apply_backlight(cur_brightness);         // then backlight
+    if (screen_mux) xSemaphoreTake(screen_mux, portMAX_DELAY);
+    if (off != screen_off) {
+        screen_off = off;
+        if (off) {
+            setUpduty(0);                            // backlight off first (instant black)
+            if (disp_sleep_cb) disp_sleep_cb(true);  // skip flush work while dark
+            amp_screen = false; amp_apply();         // drop amp if nothing is playing
+        } else {
+            amp_screen = true; amp_apply();          // amp on before anything plays
+            if (disp_sleep_cb) disp_sleep_cb(false); // restore flush
+            apply_backlight(cur_brightness);         // then backlight
+        }
+        ESP_LOGI(TAG, "screen %s  heap int=%u dma=%u big=%u", off ? "off" : "on",
+                 (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+                 (unsigned)heap_caps_get_free_size(MALLOC_CAP_DMA),
+                 (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_DMA));
     }
-    ESP_LOGI(TAG, "screen %s  heap int=%u dma=%u big=%u", off ? "off" : "on",
-             (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
-             (unsigned)heap_caps_get_free_size(MALLOC_CAP_DMA),
-             (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_DMA));
+    if (screen_mux) xSemaphoreGive(screen_mux);
 }
 
 void app_power_set_display_sleep_cb(display_sleep_cb_t cb) { disp_sleep_cb = cb; }
@@ -71,14 +85,14 @@ void app_power_set_amp(bool on) { amp_play = on; amp_apply(); }
 
 void app_power_user_activity(void)
 {
-    last_activity_ms = now_ms();   // keep the screen awake; do NOT wake it from off
+    last_activity_ms = (uint32_t)now_ms();   // keep the screen awake; do NOT wake it from off
 }
 
 bool app_power_screen_is_off(void) { return screen_off; }
 
 void app_power_wake(void)
 {
-    last_activity_ms = now_ms();
+    last_activity_ms = (uint32_t)now_ms();
     if (screen_off) screen_set_off(false);
 }
 
@@ -146,11 +160,50 @@ void app_power_set_brightness(int pct)
 void app_power_off(void)
 {
     ESP_LOGW(TAG, "powering off");
-    app_log_flush();   // persist the tail of the log before sleeping
+
+    // Save the exact resume position before sleeping — ui_tick only persists every ~5 s,
+    // so without this a power-off (or dying battery) loses up to 5 s of position (F-31).
+    player_status_t st;
+    app_player_get_status(&st);
+    if (st.book_idx >= 0) app_store_set_last(st.book_idx, st.chapter, st.pos_ms);
+
+    // Stop the player so it closes its open chapter file (the player only reads the SD,
+    // so it can't corrupt the FAT, but it must not be inside f_read when we unmount).
+    app_player_stop();
+
     amp_play = false; amp_screen = false; amp_apply();   // silence the amp
     if (disp_sleep_cb) disp_sleep_cb(true);
     setUpduty(0);                                         // backlight off
-    vTaskDelay(pdMS_TO_TICKS(300));
+
+    // Give the higher-priority player task (same core) time to drain CMD_STOP and finish
+    // any in-flight frame before we touch the filesystem.
+    vTaskDelay(pdMS_TO_TICKS(60));
+
+    // Quiesce SD/log I/O before cutting power: flush the log and hold the flush lock,
+    // then unmount the FAT volume so a power-off can't land mid FAT update (F-12).
+    app_log_suspend();
+    sdcard_unmount();
+
+    // Wait for BOOT to be released before arming EXT1 — a long-press held past sleep
+    // entry keeps GPIO0 low and would immediately wake the device back up (F-05).
+    while (gpio_get_level(PWR_GPIO) == 0) vTaskDelay(pdMS_TO_TICKS(20));
+    vTaskDelay(pdMS_TO_TICKS(50));   // debounce the release
+
+    // Deep-sleep pin hygiene (F-13): digital pull-ups power down in deep sleep, so
+    // latch the amp (GPIO15) and backlight (GPIO5) enables low — floating, they can
+    // partially enable the amp / BL driver and drain the battery while "off" — and hold
+    // the RTC pull-up on BOOT/GPIO0 so the aging switch line can't float low and either
+    // spuriously wake the device or block sleep.
+    gpio_set_level(EXAMPLE_PIN_NUM_AMP_EN, 0);
+    gpio_hold_en(EXAMPLE_PIN_NUM_AMP_EN);
+    gpio_reset_pin(EXAMPLE_PIN_NUM_BK_LIGHT);            // detach LEDC -> plain GPIO
+    gpio_set_direction(EXAMPLE_PIN_NUM_BK_LIGHT, GPIO_MODE_OUTPUT);
+    gpio_set_level(EXAMPLE_PIN_NUM_BK_LIGHT, 0);
+    gpio_hold_en(EXAMPLE_PIN_NUM_BK_LIGHT);
+    gpio_deep_sleep_hold_en();
+    rtc_gpio_pullup_en(GPIO_NUM_0);
+    rtc_gpio_pulldown_dis(GPIO_NUM_0);
+
     // No hardware latch on this board: deep-sleep and wake on BOOT (active low).
     esp_sleep_enable_ext1_wakeup(1ULL << PWR_GPIO, ESP_EXT1_WAKEUP_ANY_LOW);
     esp_deep_sleep_start();
@@ -160,7 +213,7 @@ void app_power_set_idle_off(bool enable, int timeout_s)
 {
     idle_off_en = enable;
     if (timeout_s > 0) idle_timeout_s = timeout_s;
-    last_activity_ms = now_ms();
+    last_activity_ms = (uint32_t)now_ms();
 }
 
 void app_power_set_boot_cb(power_btn_cb_t cb) { boot_cb = cb; }
@@ -177,7 +230,7 @@ static void button_task(void *arg)
             if (screen_off) {
                 app_power_wake();                  // asleep -> just turn the screen on
             } else {
-                last_activity_ms = now_ms();
+                last_activity_ms = (uint32_t)now_ms();
                 if (boot_cb) boot_cb();            // already on -> go Home
             }
         }
@@ -188,17 +241,17 @@ static void idle_task(void *arg)
 {
     for (;;) {
         vTaskDelay(pdMS_TO_TICKS(1000));
-        uint64_t idle = now_ms() - last_activity_ms;
+        uint32_t idle = (uint32_t)now_ms() - last_activity_ms;   // wrap-safe modular delta
 
         // Screen auto-off after touch inactivity — even while audio plays.
-        if (screen_timeout_s > 0 && !screen_off && idle > (uint64_t)screen_timeout_s * 1000)
+        if (screen_timeout_s > 0 && !screen_off && idle > (uint32_t)screen_timeout_s * 1000)
             screen_set_off(true);
 
         // Device power-off only when idle AND nothing is playing.
         if (idle_off_en) {
             player_status_t st;
             app_player_get_status(&st);
-            if (st.state != PLAYER_PLAYING && idle > (uint64_t)idle_timeout_s * 1000) {
+            if (st.state != PLAYER_PLAYING && idle > (uint32_t)idle_timeout_s * 1000) {
                 ESP_LOGW(TAG, "idle %ds -> power off", idle_timeout_s);
                 app_power_off();
             }
@@ -223,12 +276,22 @@ static void amp_setup(void)
 
 void app_power_init(void)
 {
+    // Release any pin holds latched by a previous deep-sleep power-off. F-13 holds AMP_EN
+    // (GPIO15) and the backlight (GPIO5) low before sleeping, and those holds SURVIVE the
+    // EXT1 wake reset — so without releasing them here the backlight and amp stay stuck
+    // off after waking and the device boots to a black, silent screen that looks dead.
+    gpio_deep_sleep_hold_dis();
+    gpio_hold_dis(EXAMPLE_PIN_NUM_AMP_EN);
+    gpio_hold_dis(EXAMPLE_PIN_NUM_BK_LIGHT);
+    rtc_gpio_hold_dis(GPIO_NUM_0);          // return BOOT/GPIO0 from RTC to normal GPIO use
+
+    screen_mux = xSemaphoreCreateMutex();
     amp_setup();
     adc_bsp_init();
     button_Init();
-    lcd_bl_pwm_bsp_init(LCD_PWM_MODE_255);
+    lcd_bl_pwm_bsp_init(0);        // start dark (active-high duty); real brightness set next
     app_power_set_brightness(app_store_get_brightness(80));
-    last_activity_ms = now_ms();
+    last_activity_ms = (uint32_t)now_ms();
     xTaskCreatePinnedToCore(button_task, "btn", 3 * 1024, NULL, 4, NULL, 1);
     xTaskCreatePinnedToCore(idle_task, "idle", 3 * 1024, NULL, 2, NULL, 1);
     ESP_LOGI(TAG, "power ready (batt %d%%, %.3f V)", app_power_battery_pct(), app_power_battery_volts());

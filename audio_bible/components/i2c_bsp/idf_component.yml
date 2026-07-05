@@ -1,0 +1,4 @@
+## Managed dependency for this component: the TCA9554 IO-expander driver used on the
+## shared I2C bus (declared here so i2c_bsp is self-contained, not reliant on main's).
+dependencies:
+  espressif/esp_io_expander_tca9554: "^2.0.1"

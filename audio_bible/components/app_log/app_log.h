@@ -19,6 +19,10 @@ esp_err_t app_log_init(void);
 // Force the in-RAM ring to be written to SD now (e.g. just before power-off).
 void app_log_flush(void);
 
+// Flush the tail, then hold the flush lock so the background flush can't be mid-write
+// while the caller unmounts the SD card ahead of deep sleep. Not released afterwards.
+void app_log_suspend(void);
+
 #ifdef __cplusplus
 }
 #endif

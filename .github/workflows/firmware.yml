@@ -1,7 +1,7 @@
 name: Build & deploy firmware installer
 
 # Builds the firmware with ESP-IDF v5.3.2, merges it into a single flashable
-# image, and publishes the web installer (docs/ + firmware.bin) to GitHub Pages.
+# image, and publishes the web installer (installer/ + firmware.bin) to GitHub Pages.
 #
 # Setup once:  Settings -> Pages -> Source: "GitHub Actions".
 # Trigger:     push a tag like  v1.0.0   (or run manually from the Actions tab).
@@ -37,17 +37,20 @@ jobs:
           command: |
             idf.py build
             cd build
-            esptool.py --chip esp32s3 merge_bin -o firmware.bin \
-              --flash_mode dio --flash_size 16MB --flash_freq 80m \
-              0x0 bootloader/bootloader.bin \
-              0x8000 partition_table/partition-table.bin \
-              0x20000 audio_bible.bin
+            # Merge using the build-generated flash_args (offsets + flash mode/size/freq),
+            # so a partition-table change can't desync the installer image from the layout
+            # the build actually produced (F-19).
+            esptool.py --chip esp32s3 merge_bin -o firmware.bin @flash_args
 
       - name: Assemble Pages site
         run: |
           mkdir -p site
           cp -r installer/* site/
           cp audio_bible/build/firmware.bin site/firmware.bin
+          # Stamp the release tag into the manifest version (was a static "1.0.0" that CI
+          # never updated). Falls back to "dev" for a manual (workflow_dispatch) run.
+          VERSION="${GITHUB_REF_NAME:-dev}"
+          sed -i "s/\"version\": *\"[^\"]*\"/\"version\": \"${VERSION}\"/" site/manifest.json
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

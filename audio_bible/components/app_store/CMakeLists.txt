@@ -1,4 +1,4 @@
 idf_component_register(
   SRCS "app_store.c"
   INCLUDE_DIRS "."
-  REQUIRES nvs_flash)
+  REQUIRES nvs_flash bible_data)

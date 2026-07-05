@@ -33,7 +33,7 @@ int get_sdcard_config(sdcard_cfg_t *card_cfg)
 int get_i2c_pin(uint8_t port, codec_i2c_pin_t *i2c_pin)
 {
     RET_ON_NOT_INIT();
-    if (port > codec->i2c_num) {
+    if (port >= codec->i2c_num) {            // port is a 0-based index into i2c_pin[]
         ESP_LOGE(TAG, "I2C %d not exits on board", port);
         return -1;
     }
@@ -44,7 +44,7 @@ int get_i2c_pin(uint8_t port, codec_i2c_pin_t *i2c_pin)
 int get_i2s_pin(uint8_t port, codec_i2s_pin_t *i2s_pin)
 {
     RET_ON_NOT_INIT();
-    if (port > codec->i2s_num) {
+    if (port >= codec->i2s_num) {            // port is a 0-based index into i2s_pin[]
         ESP_LOGE(TAG, "I2S %d not exits on board", port);
         return -1;
     }

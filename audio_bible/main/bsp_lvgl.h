@@ -4,20 +4,10 @@
 // lives in main.c; the app builds its screens under this lock.
 #include <stdbool.h>
 #include <stdint.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/queue.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-typedef struct {
-    int16_t x;
-    int16_t y;
-} app_touch_t;
-
-// Raw touch points (already rotated to LVGL coordinates) for app gestures.
-extern QueueHandle_t app_touch_data_queue;
 
 // Take/release the global LVGL mutex. timeout_ms = -1 blocks forever.
 bool bible_lvgl_lock(int timeout_ms);
