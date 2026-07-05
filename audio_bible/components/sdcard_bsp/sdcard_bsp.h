@@ -17,8 +17,9 @@ extern "C" {
 
 
 void _sdcard_init(void);
+void sdcard_unmount(void);   // flush + unmount the FAT volume (call before deep sleep)
 esp_err_t sdcard_file_write(const char *path, const char *data);
-esp_err_t sdcard_file_read(const char *path, char *buffer, size_t *out_len);
+esp_err_t sdcard_file_read(const char *path, char *buffer, size_t bufsz, size_t *out_len);
 
 #ifdef __cplusplus
 }

@@ -1,4 +1,4 @@
-# --- Target / flash / PSRAM (Waveshare ESP32-S3-Touch-LCD-3.49) ---
+# --- Target / flash / PSRAM (Waveshare ESP32-S3-Touch-LCD-1.85C V2) ---
 CONFIG_IDF_TARGET="esp32s3"
 CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
 CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
@@ -10,6 +10,15 @@ CONFIG_FREERTOS_HZ=1000
 # --- Partition table ---
 CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+
+# --- FATFS long filenames (REQUIRED) ---
+# The SD layout is BIBLE/<LANG>/<VERSION>, e.g. Malayalam/POC_Dramatized. Without
+# LFN, readdir() returns 8.3 names (MALAYA~1) and the version scan / default-version
+# match in app_ui/app_player break. UTF-8 API encoding is set explicitly because the
+# FATFS default is ANSI/OEM, which would mangle any non-ASCII folder name.
+CONFIG_FATFS_LFN_HEAP=y
+CONFIG_FATFS_MAX_LFN=255
+CONFIG_FATFS_API_ENCODING_UTF_8=y
 
 # --- App main task: heavy init (display, codec, sd) needs headroom ---
 CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192

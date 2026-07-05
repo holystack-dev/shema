@@ -30,7 +30,8 @@ static char             *ring;        // RING_SZ bytes (PSRAM)
 static char             *snap;        // RING_SZ scratch for the flush copy
 static size_t            r_head;      // index of the next byte to write
 static size_t            r_count;     // bytes pending (clamped to RING_SZ)
-static SemaphoreHandle_t r_mux;
+static SemaphoreHandle_t r_mux;       // guards the ring buffer
+static SemaphoreHandle_t flush_mux;   // serialises the whole flush (snapshot + file I/O)
 static vprintf_like_t    prev_vprintf;
 static volatile bool     in_flush;    // suppress capture of our own SD I/O logs
 static long              file_bytes = -1;
@@ -74,7 +75,13 @@ static int log_vprintf(const char *fmt, va_list ap)
 
 void app_log_flush(void)
 {
-    if (!ring || !snap || !r_mux) return;
+    if (!ring || !snap || !r_mux || !flush_mux) return;
+
+    // Serialise the entire flush. Both the background flush_task (core 0) and
+    // app_power_off() (core 1) call this, and snap/file_bytes/in_flush and the file
+    // append/rotate are shared — not just the ring — so one mutex must cover it all
+    // or the two paths interleave and corrupt the log (F-11).
+    xSemaphoreTake(flush_mux, portMAX_DELAY);
 
     xSemaphoreTake(r_mux, portMAX_DELAY);
     size_t n = r_count;
@@ -90,21 +97,32 @@ void app_log_flush(void)
         r_count = 0;
     }
     xSemaphoreGive(r_mux);
-    if (!n) return;
 
-    in_flush = true;
-    FILE *f = fopen(LOG_PATH, "a");
-    if (f) {
-        fwrite(snap, 1, n, f);
-        file_bytes = ftell(f);
-        fclose(f);
-        if (file_bytes > FILE_CAP) {           // rotate; keep one old generation
-            remove(LOG_PATH_OLD);
-            rename(LOG_PATH, LOG_PATH_OLD);
-            file_bytes = 0;
+    if (n) {
+        in_flush = true;
+        FILE *f = fopen(LOG_PATH, "a");
+        if (f) {
+            fwrite(snap, 1, n, f);
+            file_bytes = ftell(f);
+            fclose(f);
+            if (file_bytes > FILE_CAP) {           // rotate; keep one old generation
+                remove(LOG_PATH_OLD);
+                rename(LOG_PATH, LOG_PATH_OLD);
+                file_bytes = 0;
+            }
         }
+        in_flush = false;
     }
-    in_flush = false;
+    xSemaphoreGive(flush_mux);
+}
+
+// Write the tail and then hold the flush lock, so no background flush can be mid-fwrite
+// while the caller unmounts the SD card before deep sleep. Deliberately not released —
+// the device is going to sleep (F-12).
+void app_log_suspend(void)
+{
+    app_log_flush();
+    if (flush_mux) xSemaphoreTake(flush_mux, portMAX_DELAY);
 }
 
 static void flush_task(void *arg)
@@ -125,7 +143,14 @@ esp_err_t app_log_init(void)
         return ESP_ERR_NO_MEM;
     }
     r_mux = xSemaphoreCreateMutex();
-    if (!r_mux) { free(ring); free(snap); ring = snap = NULL; return ESP_ERR_NO_MEM; }
+    flush_mux = xSemaphoreCreateMutex();
+    if (!r_mux || !flush_mux) {
+        if (r_mux) vSemaphoreDelete(r_mux);
+        if (flush_mux) vSemaphoreDelete(flush_mux);
+        r_mux = flush_mux = NULL;
+        free(ring); free(snap); ring = snap = NULL;
+        return ESP_ERR_NO_MEM;
+    }
     r_head = r_count = 0;
 
     // A boot marker makes power-cycles easy to find when reading the file back.

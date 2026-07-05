@@ -21,8 +21,6 @@ extern EventGroupHandle_t pwr_groups;
 #define rset_bit_data(x) ((uint32_t)0x01<<(x))
 
 void button_Init(void);
-uint8_t user_button_get_repeat_count(void);
-uint8_t user_boot_get_repeat_count(void);
 
 
 #ifdef __cplusplus

@@ -20,7 +20,7 @@ typedef struct {
     int  book_idx;    // 0..72 (index into BIBLE_BOOKS), -1 if none
     int  chapter;     // 1..chapter_count
     uint32_t pos_ms;  // current playback position
-    uint32_t dur_ms;  // track duration (from baked metadata)
+    uint32_t dur_ms;  // track duration (computed from the MP3 at play time)
     int  volume;      // 0..100
     bool repeat_all;
 } player_status_t;

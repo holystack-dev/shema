@@ -572,11 +572,16 @@ static int parse_cfg(const char *section, int size)
 
 board_section_t *get_codec_section(const char *codec_type)
 {
+    // NULL the static after every free so a retry (e.g. after a bad board name) can't
+    // double-free the same block; also handle calloc failure (F-22).
     if (codec_section) {
         free(codec_section);
+        codec_section = NULL;
     }
     codec_section = calloc(1, sizeof(board_section_t));
-    if (codec_type == NULL) {
+    if (codec_section == NULL || codec_type == NULL) {
+        free(codec_section);
+        codec_section = NULL;
         return NULL;
     }
     int cfg_size = board_cfg_end - board_cfg_start;
@@ -592,5 +597,6 @@ board_section_t *get_codec_section(const char *codec_type)
         return codec_section;
     } while (0);
     free(codec_section);
+    codec_section = NULL;
     return NULL;
 }

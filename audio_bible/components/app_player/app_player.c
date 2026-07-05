@@ -26,14 +26,19 @@ static const char *TAG = "player";
 #define MAX_PCM_SAMP   (MAX_NGRAN * MAX_NSAMP * MAX_NCHAN)   // 2304 shorts
 #define MAX_MONO_SAMP  (MAX_NGRAN * MAX_NSAMP)               // 1152 samples/frame
 
-typedef enum { CMD_PLAY, CMD_PAUSE_TOGGLE, CMD_STOP, CMD_NEXT, CMD_PREV, CMD_SEEK, CMD_CLICK } cmd_type_t;
+// All player mutations run on the player task via this queue, so nothing else
+// touches the codec, the open file, or g_base/name_fmt (single-writer model).
+typedef enum {
+    CMD_PLAY, CMD_PAUSE_TOGGLE, CMD_STOP, CMD_NEXT, CMD_PREV, CMD_SEEK, CMD_CLICK,
+    CMD_SET_BASE, CMD_SET_VOLUME,
+} cmd_type_t;
 
 #define CLICK_SAMP 480   // 10 ms @ 48 kHz
 typedef struct {
     cmd_type_t type;
     int        book_idx;
     int        chapter;
-    uint32_t   arg;     // seek target ms
+    uint32_t   arg;     // seek target ms / volume 0..100
 } player_cmd_t;
 
 // ---- shared state (guarded by st_mux) ----
@@ -47,6 +52,15 @@ static player_event_cb_t  evt_cb;
 static player_amp_cb_t    amp_cb;
 
 static void amp(bool on) { if (amp_cb) amp_cb(on); }
+
+// Post a command with a short timeout instead of dropping on a full queue. The
+// player task only stalls for a single frame (~26 ms) inside esp_codec_dev_write,
+// so 100 ms is ample; a genuine failure is logged rather than silently lost (F-23).
+static void post_cmd(const player_cmd_t *c)
+{
+    if (cmd_q && xQueueSend(cmd_q, c, pdMS_TO_TICKS(100)) != pdTRUE)
+        ESP_LOGW(TAG, "cmd queue full; dropped cmd type %d", (int)c->type);
+}
 
 // ---- player-task-local ----
 static FILE     *fp;
@@ -63,6 +77,10 @@ static short     click_pcm[CLICK_SAMP * 2];  // pre-rendered UI tick (48k stereo
 
 void app_player_get_status(player_status_t *out)
 {
+    if (!st_mux) {                 // called before app_player_init(): report "stopped" (F-32)
+        *out = (player_status_t){ .state = PLAYER_STOPPED, .book_idx = -1 };
+        return;
+    }
     xSemaphoreTake(st_mux, portMAX_DELAY);
     *out = g_st;
     xSemaphoreGive(st_mux);
@@ -74,7 +92,8 @@ void app_player_get_status(player_status_t *out)
 typedef struct { char dir[96]; char name[40]; char shortn[32]; } ver_t;
 static ver_t g_vers[MAX_VERS];
 static int   g_vers_n = -1;                  // -1 = not scanned yet
-static char  g_base[96] = SD_MOUNT "/AUDIO"; // legacy default until a version is chosen
+static char  g_base[96] = SD_MOUNT "/AUDIO"; // legacy default; player-task-only
+static char  pending_base[96];               // UI->player handoff for CMD_SET_BASE (st_mux)
 
 // File naming under the base, auto-detected: "1_1.mp3" vs "01_01.mp3".
 static const char *const NAME_FMT[] = { "%s/%d_%d.mp3", "%s/%02d_%02d.mp3" };
@@ -138,19 +157,27 @@ int app_player_find_version(const char *dir)
     for (int i = 0; i < g_vers_n; i++) if (strcmp(g_vers[i].dir, dir) == 0) return i;
     return -1;
 }
+// Route the base change through the command queue so only the player task ever
+// writes g_base/name_fmt — otherwise auto-advance could fopen() a half-updated
+// path while the user picks a new version (F-17).
 void app_player_set_base(const char *dir)
 {
     if (!dir || !dir[0]) return;
-    snprintf(g_base, sizeof g_base, "%s", dir);
-    name_fmt = -1;   // re-detect filename format under the new base
+    xSemaphoreTake(st_mux, portMAX_DELAY);
+    snprintf(pending_base, sizeof pending_base, "%s", dir);
+    xSemaphoreGive(st_mux);
+    player_cmd_t c = { .type = CMD_SET_BASE };
+    post_cmd(&c);
 }
 
 static int refill(void)
 {
+    if (!fp) return 0;
     if (in_left > 0 && in_ptr != in_buf) memmove(in_buf, in_ptr, in_left);
     in_ptr = in_buf;
     int got = fread(in_buf + in_left, 1, INBUF_SZ - in_left, fp);
     if (got > 0) in_left += got;
+    else if (ferror(fp)) ESP_LOGW(TAG, "SD read error mid-chapter");   // e.g. card pulled
     return got;
 }
 
@@ -176,6 +203,12 @@ static bool start_track(int book_idx, int chapter)
     }
     fseek(fp, 0, SEEK_END);
     track_size = ftell(fp);
+    if (track_size <= 0) {                    // unreadable / empty file -> treat as missing
+        ESP_LOGE(TAG, "bad size (%ld) for book %d ch %d",
+                 track_size, BIBLE_BOOKS[book_idx].id, chapter);
+        close_track();
+        return false;
+    }
     fseek(fp, 0, SEEK_SET);
     pos_samples = 0;
 
@@ -205,34 +238,49 @@ static bool start_track(int book_idx, int chapter)
     xSemaphoreGive(st_mux);
 
     ESP_LOGI(TAG, "play %s %d (%ld bytes, %lu ms) vol=%d",
-             BIBLE_BOOKS[book_idx].name, chapter, track_size, dur, vol);
+             BIBLE_BOOKS[book_idx].name, chapter, track_size, (unsigned long)dur, vol);
     amp(true);   // enable amp before any PCM is written (no clipped start)
     return true;
 }
 
-static void ensure_codec(int sr, int ch)
+// Open the codec at (sr, ch); returns false if the open failed. cur_sr/cur_ch are
+// latched only on success, so a transient I2C/ES8311 failure is retried on the next
+// call instead of being masked forever by the sr==cur_sr early-return (F-07).
+static bool ensure_codec(int sr, int ch)
 {
-    if (sr == cur_sr && ch == cur_ch) return;
-    if (cur_sr) esp_codec_dev_close(playback);
+    if (sr == cur_sr && ch == cur_ch) return true;
+    if (cur_sr) { esp_codec_dev_close(playback); cur_sr = cur_ch = 0; }  // now closed
     esp_codec_dev_sample_info_t fs = { .sample_rate = sr, .channel = 2, .bits_per_sample = 16 };
     int rc = esp_codec_dev_open(playback, &fs);
-    if (rc != ESP_CODEC_DEV_OK) { ESP_LOGE(TAG, "esp_codec_dev_open failed (%d)", rc); }
-    else ESP_LOGI(TAG, "Open codec device OK %d Hz", sr);
+    if (rc != ESP_CODEC_DEV_OK) {
+        ESP_LOGE(TAG, "esp_codec_dev_open failed (%d) at %d Hz", rc, sr);
+        return false;   // leave cur_sr/cur_ch = 0 so the next attempt retries the open
+    }
     int vol;
     xSemaphoreTake(st_mux, portMAX_DELAY); vol = g_st.volume; xSemaphoreGive(st_mux);
     esp_codec_dev_set_out_vol(playback, (float)vol);
     cur_sr = sr; cur_ch = ch;
+    ESP_LOGI(TAG, "Open codec device OK %d Hz", sr);
+    return true;
 }
 
 // returns: 0 decoded a frame, 1 EOF, -1 fatal
 static int decode_frame(void)
 {
+    static int underflow_eof;   // consecutive underflows with no new bytes from the card
+    static int codec_fail;      // consecutive codec-open failures
+
     if (in_left < MAINBUF_SIZE) {
         if (refill() == 0 && in_left == 0) return 1; // EOF, nothing buffered
     }
     int off = MP3FindSyncWord(in_ptr, in_left);
     if (off < 0) {
-        in_left = 0;                        // no sync in buffer; drop & refill
+        // No sync in the buffer. Keep the last few bytes in case a sync word straddles
+        // the buffer boundary — dropping the whole buffer could split a 2-4 byte sync
+        // and glitch one frame (F-28). When the card has no more bytes, that's EOF.
+        int keep = (in_left >= 3) ? 3 : in_left;
+        in_ptr += in_left - keep;
+        in_left = keep;
         return (refill() == 0) ? 1 : 0;
     }
     in_ptr += off; in_left -= off;
@@ -240,8 +288,15 @@ static int decode_frame(void)
 
     int err = MP3Decode(mp3, &in_ptr, &in_left, pcm, 0);
     if (err == ERR_MP3_INDATA_UNDERFLOW || err == ERR_MP3_MAINDATA_UNDERFLOW) {
-        return (refill() == 0 && in_left == 0) ? 1 : 0;
+        if (refill() > 0) { underflow_eof = 0; return 0; }   // got more file data, retry
+        // No more bytes on the card. Helix underflow consumes no input, so a truncated
+        // final frame (valid sync, short body) leaves in_left > 0 forever: the same
+        // frame underflows every pass and busy-spins core 1 (F-03). Bail once the buffer
+        // is drained or has stopped growing across a couple of passes.
+        if (in_left == 0 || ++underflow_eof >= 2) { underflow_eof = 0; return 1; }
+        return 0;
     }
+    underflow_eof = 0;
     if (err != ERR_MP3_NONE) {
         ESP_LOGW(TAG, "MP3 decode error: %d", err);
         if (in_left > 0) { in_ptr++; in_left--; }   // skip a byte, resync
@@ -251,7 +306,14 @@ static int decode_frame(void)
     MP3FrameInfo fi;
     MP3GetLastFrameInfo(mp3, &fi);
     if (fi.outputSamps <= 0) return 0;
-    ensure_codec(fi.samprate, fi.nChans);
+    if (!ensure_codec(fi.samprate, fi.nChans)) {
+        // Codec open failed (transient I2C/ES8311 glitch). Don't spin the CPU writing to
+        // a closed codec; yield to pace the retry, and give up after a few tries so the
+        // player stops cleanly instead of "playing" silently at 100% CPU (F-07).
+        vTaskDelay(pdMS_TO_TICKS(20));
+        return (++codec_fail >= 10) ? -1 : 0;
+    }
+    codec_fail = 0;
 
     int nsamp = (fi.nChans == 1) ? fi.outputSamps : fi.outputSamps / 2;
     short *out = pcm;
@@ -289,10 +351,11 @@ static void gen_click(void)
 // saved position are never disturbed. Runs on the player task (owns the codec).
 static void play_click(void)
 {
-    player_state_t state;
-    xSemaphoreTake(st_mux, portMAX_DELAY); state = g_st.state; xSemaphoreGive(st_mux);
-    if (state == PLAYER_PLAYING) return;
-    ensure_codec(48000, 2);
+    // A chapter is loaded (playing or paused): don't retune the codec to the 48 kHz
+    // click rate — reopening it would force a close/open pop when the 44.1 kHz chapter
+    // resumes (F-26). Only click when fully stopped.
+    if (fp) return;
+    if (!ensure_codec(48000, 2)) return;
     esp_codec_dev_write(playback, click_pcm, sizeof(click_pcm));
 }
 
@@ -328,11 +391,26 @@ static void do_seek(uint32_t ms)
     xSemaphoreTake(st_mux, portMAX_DELAY); g_st.pos_ms = ms; xSemaphoreGive(st_mux);
 }
 
+// Enter STOPPED: release the file, drop the amp, notify the UI. Used for end of
+// content, a failed start (missing/corrupt chapter), and a fatal codec error, so the
+// UI never sees a phantom PLAYING state with fp==NULL and the amp stuck on (F-06).
+static void enter_stopped(void)
+{
+    close_track();
+    player_status_t s;
+    xSemaphoreTake(st_mux, portMAX_DELAY);
+    g_st.state = PLAYER_STOPPED;
+    s = g_st;
+    xSemaphoreGive(st_mux);
+    amp(false);
+    if (evt_cb) evt_cb(&s);
+}
+
 static void handle_cmd(const player_cmd_t *c)
 {
     switch (c->type) {
     case CMD_PLAY:
-        start_track(c->book_idx, c->chapter);
+        if (!start_track(c->book_idx, c->chapter)) enter_stopped();
         break;
     case CMD_STOP:
         close_track();
@@ -354,7 +432,9 @@ static void handle_cmd(const player_cmd_t *c)
         int bi, ch; bool ra;
         xSemaphoreTake(st_mux, portMAX_DELAY); bi = g_st.book_idx; ch = g_st.chapter; ra = g_st.repeat_all; xSemaphoreGive(st_mux);
         if (bi < 0) break;
-        if (calc_step(c->type == CMD_NEXT ? 1 : -1, &bi, &ch, ra)) start_track(bi, ch);
+        if (calc_step(c->type == CMD_NEXT ? 1 : -1, &bi, &ch, ra)) {
+            if (!start_track(bi, ch)) enter_stopped();
+        }
         break;
     }
     case CMD_SEEK:
@@ -362,6 +442,15 @@ static void handle_cmd(const player_cmd_t *c)
         break;
     case CMD_CLICK:
         play_click();
+        break;
+    case CMD_SET_BASE:
+        xSemaphoreTake(st_mux, portMAX_DELAY);
+        snprintf(g_base, sizeof g_base, "%s", pending_base);
+        xSemaphoreGive(st_mux);
+        name_fmt = -1;   // re-detect filename format under the new base
+        break;
+    case CMD_SET_VOLUME:
+        if (cur_sr) esp_codec_dev_set_out_vol(playback, (float)c->arg);
         break;
     }
 }
@@ -382,13 +471,11 @@ static void player_task(void *arg)
                 xSemaphoreTake(st_mux, portMAX_DELAY); bi = g_st.book_idx; ch = g_st.chapter; ra = g_st.repeat_all; xSemaphoreGive(st_mux);
                 close_track();
                 ESP_LOGI(TAG, "track end");
-                if (calc_step(1, &bi, &ch, ra) && start_track(bi, ch)) {
-                    // continued
-                } else {
-                    xSemaphoreTake(st_mux, portMAX_DELAY); g_st.state = PLAYER_STOPPED; player_status_t s = g_st; xSemaphoreGive(st_mux);
-                    amp(false);   // end of content -> drop amp
-                    if (evt_cb) evt_cb(&s);
-                }
+                if (!(calc_step(1, &bi, &ch, ra) && start_track(bi, ch)))
+                    enter_stopped();      // end of content, or the next chapter is missing
+            } else if (r < 0) {           // fatal decode/codec error -> stop cleanly
+                ESP_LOGE(TAG, "fatal player error -> stop");
+                enter_stopped();
             }
         } else {
             // paused or stopped: short poll so UI clicks stay responsive
@@ -401,6 +488,7 @@ esp_err_t app_player_init(void)
 {
     st_mux = xSemaphoreCreateMutex();
     cmd_q  = xQueueCreate(8, sizeof(player_cmd_t));
+    if (!st_mux || !cmd_q) { ESP_LOGE(TAG, "player state alloc failed"); return ESP_FAIL; }
 
     set_codec_board_type("S3_LCD_1_85C");
     codec_init_cfg_t cfg = {
@@ -421,28 +509,35 @@ esp_err_t app_player_init(void)
 
     gen_click();
 
-    xTaskCreatePinnedToCore(player_task, "player", 6 * 1024, NULL, 5, NULL, 1);
+    if (xTaskCreatePinnedToCore(player_task, "player", 6 * 1024, NULL, 5, NULL, 1) != pdPASS) {
+        ESP_LOGE(TAG, "player task create failed");
+        return ESP_FAIL;
+    }
     return ESP_OK;
 }
 
 void app_player_play(int book_idx, int chapter)
 {
     player_cmd_t c = { .type = CMD_PLAY, .book_idx = book_idx, .chapter = chapter };
-    xQueueSend(cmd_q, &c, 0);
+    post_cmd(&c);
 }
-void app_player_toggle_pause(void) { player_cmd_t c = { .type = CMD_PAUSE_TOGGLE }; xQueueSend(cmd_q, &c, 0); }
-void app_player_stop(void)         { player_cmd_t c = { .type = CMD_STOP };  xQueueSend(cmd_q, &c, 0); }
-void app_player_next(void)         { player_cmd_t c = { .type = CMD_NEXT };  xQueueSend(cmd_q, &c, 0); }
-void app_player_prev(void)         { player_cmd_t c = { .type = CMD_PREV };  xQueueSend(cmd_q, &c, 0); }
-void app_player_seek_ms(uint32_t ms) { player_cmd_t c = { .type = CMD_SEEK, .arg = ms }; xQueueSend(cmd_q, &c, 0); }
-void app_player_click(void)          { player_cmd_t c = { .type = CMD_CLICK }; xQueueSend(cmd_q, &c, 0); }
+void app_player_toggle_pause(void) { player_cmd_t c = { .type = CMD_PAUSE_TOGGLE }; post_cmd(&c); }
+void app_player_stop(void)         { player_cmd_t c = { .type = CMD_STOP };  post_cmd(&c); }
+void app_player_next(void)         { player_cmd_t c = { .type = CMD_NEXT };  post_cmd(&c); }
+void app_player_prev(void)         { player_cmd_t c = { .type = CMD_PREV };  post_cmd(&c); }
+void app_player_seek_ms(uint32_t ms) { player_cmd_t c = { .type = CMD_SEEK, .arg = ms }; post_cmd(&c); }
+void app_player_click(void)          { player_cmd_t c = { .type = CMD_CLICK }; post_cmd(&c); }
 
 void app_player_set_volume(int vol)
 {
     if (vol < 0) vol = 0;
     if (vol > 100) vol = 100;
+    // Update the shared value now (so get_volume and a fresh codec-open pick it up), but
+    // apply it to the codec on the player task so it can't race an in-flight close/open
+    // or read the player-task-local cur_sr from the UI task (F-24).
     xSemaphoreTake(st_mux, portMAX_DELAY); g_st.volume = vol; xSemaphoreGive(st_mux);
-    if (cur_sr) esp_codec_dev_set_out_vol(playback, (float)vol);
+    player_cmd_t c = { .type = CMD_SET_VOLUME, .arg = (uint32_t)vol };
+    post_cmd(&c);
 }
 int app_player_get_volume(void) { int v; xSemaphoreTake(st_mux, portMAX_DELAY); v = g_st.volume; xSemaphoreGive(st_mux); return v; }
 void app_player_set_repeat_all(bool en) { xSemaphoreTake(st_mux, portMAX_DELAY); g_st.repeat_all = en; xSemaphoreGive(st_mux); }

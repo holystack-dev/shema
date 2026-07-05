@@ -5,17 +5,6 @@
 #include "driver/gpio.h"
 #include "user_config.h"
 
-void gpio_init(void)
-{
-  gpio_config_t gpio_conf = {};
-  gpio_conf.intr_type = GPIO_INTR_DISABLE;
-  gpio_conf.mode = GPIO_MODE_OUTPUT;
-  gpio_conf.pin_bit_mask = ((uint64_t)0X01<<EXAMPLE_PIN_NUM_BK_LIGHT);
-  gpio_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
-  gpio_conf.pull_up_en = GPIO_PULLUP_ENABLE;
-
-  ESP_ERROR_CHECK_WITHOUT_ABORT(gpio_config(&gpio_conf));
-}
 void lcd_bl_pwm_bsp_init(uint16_t duty)
 { 
   ledc_timer_config_t timer_conf = 

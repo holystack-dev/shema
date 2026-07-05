@@ -1,5 +1,5 @@
 idf_component_register(
   SRCS "app_player.c"
   INCLUDE_DIRS "."
-  REQUIRES esp_codec_dev codec_board
-  PRIV_REQUIRES main esp-libhelix-mp3)
+  REQUIRES esp_codec_dev codec_board bible_data
+  PRIV_REQUIRES esp-libhelix-mp3)
