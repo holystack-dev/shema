@@ -1,10 +1,15 @@
-name: Build & deploy firmware installer
+name: Release firmware installer
 
-# Builds the firmware with ESP-IDF v5.3.2, merges it into a single flashable
-# image, and publishes the web installer (installer/ + firmware.bin) to GitHub Pages.
+# On a v* tag, build the firmware, merge it into a single flashable image, and
+# publish it by committing installer/firmware.bin + a version-stamped
+# installer/manifest.json back to main.
 #
-# Setup once:  Settings -> Pages -> Source: "GitHub Actions".
-# Trigger:     push a tag like  v1.0.0   (or run manually from the Actions tab).
+# The web installer (holystack.dev/shema/flash) fetches the firmware directly from
+#   raw.githubusercontent.com/holystack-dev/shema/main/installer/firmware.bin
+# so committing to main is what actually goes live — no GitHub Pages involved.
+#
+# Release flow: merge to main -> create the tag at main's HEAD -> push the tag:
+#   git tag v1.1.0 && git push origin v1.1.0
 
 on:
   push:
@@ -12,22 +17,25 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write   # attach firmware.bin to the GitHub Release
-  pages: write      # deploy to GitHub Pages
-  id-token: write   # required by deploy-pages
+  contents: write   # commit the built firmware to main + create the Release
 
 concurrency:
-  group: pages
-  cancel-in-progress: true
+  group: release-firmware
+  cancel-in-progress: false
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
     steps:
+      # Check out main (not the detached tag) so the freshly-built artifact can be
+      # committed straight back onto main. Create the release tag at main's HEAD.
       - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
 
-      # Build AND merge inside the IDF container so the esptool version that
-      # produced flasher_args.json is the one that consumes it.
+      # Build AND merge inside the IDF container so the esptool that produced
+      # flasher_args.json is the one that consumes it.
       - name: Build & merge firmware (ESP-IDF v5.3.2)
         uses: espressif/esp-idf-ci-action@v1
         with:
@@ -37,38 +45,32 @@ jobs:
           command: |
             idf.py build
             cd build
-            # Merge using the build-generated flash_args (offsets + flash mode/size/freq),
-            # so a partition-table change can't desync the installer image from the layout
-            # the build actually produced (F-19).
+            # Merge from the build-generated flash_args (offsets + flash mode/size/freq)
+            # so the image can't desync from the layout the build produced.
             esptool.py --chip esp32s3 merge_bin -o firmware.bin @flash_args
 
-      - name: Assemble Pages site
+      - name: Place firmware + stamp manifest from the tag
         run: |
-          mkdir -p site
-          cp -r installer/* site/
-          cp audio_bible/build/firmware.bin site/firmware.bin
-          # Stamp the release tag into the manifest version (was a static "1.0.0" that CI
-          # never updated). Falls back to "dev" for a manual (workflow_dispatch) run.
-          VERSION="${GITHUB_REF_NAME:-dev}"
-          sed -i "s/\"version\": *\"[^\"]*\"/\"version\": \"${VERSION}\"/" site/manifest.json
+          TAG="${GITHUB_REF_NAME:-dev}"
+          VERSION="${TAG#v}"        # strip a leading v for a clean semver in the manifest
+          cp audio_bible/build/firmware.bin installer/firmware.bin
+          sed -i "s/\"version\": *\"[^\"]*\"/\"version\": \"${VERSION}\"/" installer/manifest.json
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: site
+      - name: Commit installer artifacts to main
+        run: |
+          TAG="${GITHUB_REF_NAME:-dev}"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add installer/firmware.bin installer/manifest.json
+          if git diff --cached --quiet; then
+            echo "installer already up to date; nothing to commit"
+          else
+            git commit -m "Release ${TAG}: rebuild installer firmware"
+            git push origin HEAD:main
+          fi
 
-      - name: Attach firmware to release
+      - name: Attach firmware to the GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: audio_bible/build/firmware.bin
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-    steps:
-      - id: deploy
-        uses: actions/deploy-pages@v4
