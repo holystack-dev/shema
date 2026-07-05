@@ -44,10 +44,10 @@ jobs:
           path: audio_bible
           command: |
             idf.py build
-            cd build
-            # Merge from the build-generated flash_args (offsets + flash mode/size/freq)
-            # so the image can't desync from the layout the build produced.
-            esptool.py --chip esp32s3 merge_bin -o firmware.bin @flash_args
+            # Merge via idf.py (esptool.py isn't on PATH in the CI container). It uses the
+            # build's own flasher args, so offsets/flash settings match the built layout.
+            # Output lands at build/firmware.bin.
+            idf.py merge-bin -o firmware.bin
 
       - name: Place firmware + stamp manifest from the tag
         run: |
