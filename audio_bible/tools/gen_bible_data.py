@@ -30,9 +30,9 @@ def c_escape(s: str) -> str:
 
 
 def main() -> None:
-    # Open the DB read-only: a plain sqlite3.connect(path) silently CREATES an empty
+    # Open the DB read-only: a plain sqlite3.connect(path) silently creates an empty
     # bible.db when it's missing, then fails later with a cryptic "no such table" and
-    # leaves the junk file behind. Fail loudly instead (F-45).
+    # leaves the junk file behind. Fail loudly instead.
     if not os.path.exists(DB):
         raise SystemExit(f"error: {DB} not found — bible.db must sit one level above the project root")
     con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)

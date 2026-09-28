@@ -161,6 +161,10 @@ static int _i2s_init(uint8_t port, esp_codec_dev_type_t dev_type, codec_init_cfg
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
     i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
     chan_cfg.auto_clear = true;
+    // The default DMA ring (6 x 240 frames) holds ~32 ms, too little to absorb SD/NVS
+    // stalls at the start of a track. 8 x 1023 frames is ~185 ms at 44.1 kHz (32 KB).
+    chan_cfg.dma_desc_num = 8;
+    chan_cfg.dma_frame_num = 1023;
     i2s_std_config_t std_cfg = {
         .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(16000),
         .slot_cfg = I2S_STD_MSB_SLOT_DEFAULT_CONFIG(32, I2S_SLOT_MODE_STEREO),

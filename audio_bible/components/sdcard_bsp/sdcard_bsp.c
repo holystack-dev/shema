@@ -20,37 +20,58 @@ EventGroupHandle_t sdcard_even_ = NULL;
 
 sdcard_bsp_t user_sdcard_bsp;
 
-#define SDlist "/sdcard" //目录,类似于一个标准
+#define SDlist "/sdcard"  // mount point
 
 sdmmc_card_t *card_host = NULL;
 
-void _sdcard_init(void)
+// Attempt to mount /sdcard. Idempotent: returns true immediately if already
+// mounted. On a failed attempt (no card present) esp_vfs_fat_sdmmc_mount
+// cleans up the SDMMC host before returning, so this is safe to call again
+// later — that's what makes card hot-plug (insert-without-reboot) work.
+bool sdcard_try_mount(void)
 {
+  if(card_host != NULL) return true;          // already mounted
+
   if (sdcard_even_ == NULL) sdcard_even_ = xEventGroupCreate();   // don't leak on re-init
   esp_vfs_fat_sdmmc_mount_config_t mount_config =
   {
-    .format_if_mount_failed = false,       //如果挂靠失败，创建分区表并格式化SD卡
-    .max_files = 5,                        //打开文件最大数
+    .format_if_mount_failed = false,       // never format the card
+    .max_files = 5,                        // max open files
     .allocation_unit_size = 16 * 1024,     //cluster size; power-of-two (only used if formatting)
   };
 
   sdmmc_host_t host = SDMMC_HOST_DEFAULT();
-  host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;//高速
+  host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;
 
   sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
-  slot_config.width = 1;           //1线
+  slot_config.width = 1;           // 1-bit bus
   slot_config.clk = SDMMC_CLK_PIN;
   slot_config.cmd = SDMMC_CMD_PIN;
   slot_config.d0 = SDMMC_D0_PIN;
 
-  ESP_ERROR_CHECK_WITHOUT_ABORT(esp_vfs_fat_sdmmc_mount(SDlist, &host, &slot_config, &mount_config, &card_host));
-
-  if(card_host != NULL)
+  esp_err_t err = esp_vfs_fat_sdmmc_mount(SDlist, &host, &slot_config, &mount_config, &card_host);
+  if(err != ESP_OK)
   {
-    sdmmc_card_print_info(stdout, card_host); //把卡的信息打印出来
-    user_sdcard_bsp.sdcard_size = (float)(card_host->csd.capacity)/2048/1024; //G
-    xEventGroupSetBits(sdcard_even_,0x01);
+    card_host = NULL;            // mount only sets *out_card on success
+    ESP_LOGD(TAG, "SD mount attempt failed: %s", esp_err_to_name(err));
+    return false;
   }
+
+  sdmmc_card_print_info(stdout, card_host);
+  user_sdcard_bsp.sdcard_size = (float)(card_host->csd.capacity)/2048/1024; //G
+  if(sdcard_even_) xEventGroupSetBits(sdcard_even_,0x01);
+  return true;
+}
+
+bool sdcard_is_mounted(void)
+{
+  return card_host != NULL;
+}
+
+void _sdcard_init(void)
+{
+  if(!sdcard_try_mount())
+    ESP_LOGW(TAG, "no SD card at boot; will auto-mount when one is inserted");
 }
 
 // Cleanly unmount the FAT volume and release the card handle. Call before deep sleep

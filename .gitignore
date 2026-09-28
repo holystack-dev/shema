@@ -16,6 +16,20 @@ details.md
 # Large vendored archives
 *.zip
 
+# Device capture/recording working output
+screenshots-out/
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Third-party reading-plan PDF (see audio_bible/tools/gen_biy_data.py)
+audio_bible/tools/biy_reading_plan.pdf
+
 # macOS cruft
 .DS_Store
 **/.DS_Store
+
+# Keep source artwork visible even when a global macOS Icon? rule matches icons/.
+!design/shema-v2/firmware-assets/icons/
+!design/shema-v2/firmware-assets/icons/*.svg

@@ -1,6 +1,6 @@
 # lcd_init.c and drv/tca9554.c are omitted: on this board the LCD is driven by the
 # app's own esp_lcd path (main.c) and the TCA9554 expander by i2c_bsp, so those files
-# are dead code here — and they carry latent bugs (F-22). Only the ES8311 output path
+# are unused. Only the ES8311 output path
 # (cfg_parse/codec_board/codec_init/dummy_codec) is used.
 
 # esp_codec_dev is public (exposed by include/codec_init.h); the rest are private,

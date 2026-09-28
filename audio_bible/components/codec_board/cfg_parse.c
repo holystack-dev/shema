@@ -573,7 +573,7 @@ static int parse_cfg(const char *section, int size)
 board_section_t *get_codec_section(const char *codec_type)
 {
     // NULL the static after every free so a retry (e.g. after a bad board name) can't
-    // double-free the same block; also handle calloc failure (F-22).
+    // double-free the same block; also handle calloc failure.
     if (codec_section) {
         free(codec_section);
         codec_section = NULL;

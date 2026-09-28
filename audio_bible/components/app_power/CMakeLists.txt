@@ -1,5 +1,5 @@
 idf_component_register(
   SRCS "app_power.c"
   INCLUDE_DIRS "."
-  REQUIRES adc_bsp button_bsp lcd_bl_pwm_bsp app_store app_player app_log
+  REQUIRES adc_bsp button_bsp lcd_bl_pwm_bsp app_store app_player app_log app_played
   PRIV_REQUIRES driver esp_timer esp_hw_support sdcard_bsp main)

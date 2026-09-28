@@ -33,7 +33,7 @@ void adc_bsp_init(void)
 }
 void adc_get_value(float *value,int *data)
 {
-  int adcdata = 0;   // init: on read failure *data must not receive an uninitialized value (F-33)
+  int adcdata = 0;   // init: on read failure *data must not receive an uninitialized value
 #ifdef ADC_Calibrate
   int vol = 0;
 #endif

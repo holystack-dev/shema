@@ -1,0 +1,172 @@
+{
+  "splash": {
+    "width": 360,
+    "height": 360,
+    "format": "RGB565 big endian",
+    "bytes": 259200
+  },
+  "icons": 35,
+  "icon_sizes": [
+    24,
+    28,
+    32
+  ],
+  "files": {
+    "README.md": {
+      "bytes": 1547,
+      "sha256": "fdde87c3d9ea484b087eced6799a621316d22d889463b31e0240d2519b5c7c1c"
+    },
+    "generate_icons.py": {
+      "bytes": 12839,
+      "sha256": "548c3fd2b9933a6f85efeb9b09ef1e74362326967aa173f8647f6356f64b9788"
+    },
+    "icons.json": {
+      "bytes": 813,
+      "sha256": "60fc3fff610cc722cda1025142f94f8625b7dec9f0eda06a92e0a1414a2560bd"
+    },
+    "icons/audio.svg": {
+      "bytes": 312,
+      "sha256": "4fdab6e88064a0bdaed93f9d37cb39763c898ce117d7a9624dd9ab3ff51e4a22"
+    },
+    "icons/back.svg": {
+      "bytes": 222,
+      "sha256": "ef7f277567a3fe4f9843de98dfc5148664143a72913a50d46f990be863b656ec"
+    },
+    "icons/battery.svg": {
+      "bytes": 303,
+      "sha256": "ee3f017761200812b3480bf56596a8a0a1c714abacd5e76cb442cdcc79297f0d"
+    },
+    "icons/book.svg": {
+      "bytes": 313,
+      "sha256": "ec49c2eda7b9759aa9a2b3c847cd09d4755ee0b456ddb0ff79637af5de76ee97"
+    },
+    "icons/check.svg": {
+      "bytes": 214,
+      "sha256": "4cdc29c93c3765490b63925076fb3629b4e3f01663064af359648e977ac2c557"
+    },
+    "icons/down.svg": {
+      "bytes": 221,
+      "sha256": "e0d2e511fe9494f0f1cec411a24b25b8eee5867e0f5ec3c96afa72039988f1a7"
+    },
+    "icons/edit.svg": {
+      "bytes": 268,
+      "sha256": "2fc19eb91c777bc05bd72404d4c1ec05c4de1e418c44abd82729bc63dec6a1f7"
+    },
+    "icons/folder.svg": {
+      "bytes": 289,
+      "sha256": "6c5e520a67c9b53b5c7a9295016a489e958eb9a3ca0c05a6a744026f48fa76de"
+    },
+    "icons/heart.svg": {
+      "bytes": 289,
+      "sha256": "833365608c5405803e02d9bb36efbd33ba67faad3859e6ea4ca937e6376a3d04"
+    },
+    "icons/heart_filled.svg": {
+      "bytes": 289,
+      "sha256": "33fdba6d999bc95ff7d2c433cd41edc372288b7e8f039c5f7162d3aa72702caa"
+    },
+    "icons/home.svg": {
+      "bytes": 272,
+      "sha256": "d70f38177fb906b3fc84d509a55e96ff8b9b9997ce7b5be6aa38ea0bdd053e95"
+    },
+    "icons/list.svg": {
+      "bytes": 256,
+      "sha256": "754b5d8f59f632f1ca094e4592d2676fd79a692825fcc6a09cc60cc34de34f35"
+    },
+    "icons/minus.svg": {
+      "bytes": 205,
+      "sha256": "9359d629d38f716e59e8c08389a2ac9be58c235b829ade63fa603267493d5b45"
+    },
+    "icons/moon.svg": {
+      "bytes": 247,
+      "sha256": "b51bc3ea0631b756db277ce7d428dbcedc6b756a8a54ad679275ea07e0cc70af"
+    },
+    "icons/moon_filled.svg": {
+      "bytes": 247,
+      "sha256": "9713880c6c2df8dba0df4206acddeb51e94b1254415c4ee597bbd8f873475862"
+    },
+    "icons/more.svg": {
+      "bytes": 351,
+      "sha256": "7c02471f068ab19dd6f744f177ddb7ed0d83af762365d44cbe972fb1a5c25254"
+    },
+    "icons/next.svg": {
+      "bytes": 221,
+      "sha256": "3e6d6a5f341e2986b75f5c5b99ca26c55c44297d5337403c62b2e18dd23fe057"
+    },
+    "icons/palette.svg": {
+      "bytes": 344,
+      "sha256": "95de6600146de502116c43f324e4e4d9496fb1c6990576cce5713e35de658504"
+    },
+    "icons/pause.svg": {
+      "bytes": 329,
+      "sha256": "4de9ecc7b3b37fdb5685901453f1129de48880f32868ac31554c1cca8750bb8e"
+    },
+    "icons/play.svg": {
+      "bytes": 278,
+      "sha256": "16d4aa889067546856e370ae90989ca0b1e85f74989134fd46c02456d280d96e"
+    },
+    "icons/plus.svg": {
+      "bytes": 215,
+      "sha256": "bd12950db5b81b21e5ce020680e3f0aa6d223091fa3e6c0acc9291826554ce62"
+    },
+    "icons/power.svg": {
+      "bytes": 234,
+      "sha256": "6adb4d1e9030c66e4f93d954520455250b1b44ea5a35f913452992e2e0ea4661"
+    },
+    "icons/prev.svg": {
+      "bytes": 326,
+      "sha256": "595ff617880bf78dbc04e4df7d7e792a5a575314f6c415f7001b5a69adbe4549"
+    },
+    "icons/recent.svg": {
+      "bytes": 266,
+      "sha256": "74cccd050e5c86ac775d572653d6bf0e307567e7248eadb37d9f050b5e65f3d7"
+    },
+    "icons/repeat.svg": {
+      "bytes": 279,
+      "sha256": "a5740ee5a989de86cd45ee881910b9dafd1d2943508a633e733b87625202101d"
+    },
+    "icons/sd.svg": {
+      "bytes": 284,
+      "sha256": "f0a19a124928e7f8f0bd560c662e43c06e6202f3e5fb2609b6bd885a72795a1d"
+    },
+    "icons/settings.svg": {
+      "bytes": 1231,
+      "sha256": "ad0fe4fe693d6651a09ab0b90eb9de41aebf195d62f1fbb0200dbe30102e47ef"
+    },
+    "icons/shuffle.svg": {
+      "bytes": 317,
+      "sha256": "6c18be29bda3d5b574c481a2ba85c94587800928ca2853d32ca8423d367d35a7"
+    },
+    "icons/skip.svg": {
+      "bytes": 335,
+      "sha256": "d00f14bc92d3992159aa808d0360ddf7b5fb91c28bb888484435d3d281739869"
+    },
+    "icons/sun.svg": {
+      "bytes": 365,
+      "sha256": "b6a6ee1fd16b25437a0a4bba4c99c6fcca109808a07095c6cbf97ab28b00d17a"
+    },
+    "icons/trash.svg": {
+      "bytes": 307,
+      "sha256": "91171472e09ba4b6ef35621c93d86f3b78c406b896c61eaa95801eeaec8a9de7"
+    },
+    "icons/up.svg": {
+      "bytes": 222,
+      "sha256": "f49b0af571bfb20dfd9b0f2b951f75ded3fb4772a3d00a22b9f8c3f37d843783"
+    },
+    "icons/volume.svg": {
+      "bytes": 286,
+      "sha256": "7a02ddca9ff6603ae280ba2885c62fae744ceb2e03658ac49a90bf00cbc658c4"
+    },
+    "icons/warning.svg": {
+      "bytes": 279,
+      "sha256": "37fbed897a9409e63c8a2b3c72c0c8c2ef0622ba510b4206f3ace8843f2b2d62"
+    },
+    "icons/year.svg": {
+      "bytes": 318,
+      "sha256": "53c83e9fb9d8c318f4e16ccca89825981817c4f76d4e80e5492837a4fb6724e2"
+    },
+    "icons_preview.png": {
+      "bytes": 31854,
+      "sha256": "446269d19e5d6619be7ffd0724b453a41a285b256e6c4718e696cc1deb79f1ad"
+    }
+  }
+}

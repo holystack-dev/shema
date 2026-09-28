@@ -1,0 +1,705 @@
+{
+  "width": 360,
+  "height": 360,
+  "duration_ms": 157700,
+  "source": "Actual ESP32 LCD flush frames with device timestamps",
+  "audio": false,
+  "actions": [
+    {
+      "label": "Home \u2014 six direct destinations",
+      "wait": 2.5,
+      "ms": 0
+    },
+    {
+      "label": "Bible \u2014 browse books",
+      "tap": [
+        84,
+        108
+      ],
+      "wait": 1.8,
+      "expect_page": 1,
+      "ms": 2503
+    },
+    {
+      "label": "Old Testament",
+      "tap": [
+        100,
+        64
+      ],
+      "expect_page": 1,
+      "wait": 1,
+      "ms": 4591
+    },
+    {
+      "label": "Start at Genesis",
+      "scroll": 0,
+      "wait": 1,
+      "ms": 5833
+    },
+    {
+      "label": "Genesis \u2014 chapter grid",
+      "tap": [
+        105,
+        146
+      ],
+      "wait": 1.8,
+      "expect_page": 2,
+      "ms": 7289
+    },
+    {
+      "label": "Browse later chapters",
+      "scroll": 180,
+      "wait": 1.8,
+      "ms": 9405
+    },
+    {
+      "label": "Return to books",
+      "tap": [
+        180,
+        322
+      ],
+      "wait": 1.5,
+      "expect_page": 1,
+      "ms": 11688
+    },
+    {
+      "label": "New Testament",
+      "tap": [
+        260,
+        64
+      ],
+      "wait": 1.8,
+      "expect_page": 1,
+      "ms": 13445
+    },
+    {
+      "label": "More New Testament books",
+      "scroll": 190,
+      "wait": 1.8,
+      "ms": 15485
+    },
+    {
+      "label": "Return Home",
+      "tap": [
+        180,
+        322
+      ],
+      "wait": 1.5,
+      "expect_page": 0,
+      "ms": 17746
+    },
+    {
+      "label": "Bible in a Year \u2014 periods",
+      "tap": [
+        180,
+        108
+      ],
+      "wait": 1.8,
+      "expect_page": 6,
+      "ms": 19450
+    },
+    {
+      "label": "Early World \u2014 daily listening",
+      "tap": [
+        180,
+        110
+      ],
+      "wait": 1.8,
+      "expect_page": 7,
+      "ms": 21533
+    },
+    {
+      "label": "Browse the days",
+      "scroll": 165,
+      "wait": 1.8,
+      "ms": 23598
+    },
+    {
+      "label": "Return to periods",
+      "tap": [
+        180,
+        322
+      ],
+      "wait": 1.5,
+      "expect_page": 6,
+      "ms": 25857
+    },
+    {
+      "label": "Later periods and introductions",
+      "scroll": 856,
+      "wait": 1.8,
+      "ms": 27602
+    },
+    {
+      "label": "Intros and Checkpoints",
+      "tap": [
+        180,
+        235
+      ],
+      "wait": 1.8,
+      "expect_page": 7,
+      "ms": 29882
+    },
+    {
+      "label": "Return to periods",
+      "tap": [
+        180,
+        322
+      ],
+      "wait": 1.5,
+      "expect_page": 6,
+      "ms": 31937
+    },
+    {
+      "label": "Return Home",
+      "tap": [
+        180,
+        322
+      ],
+      "wait": 1.5,
+      "expect_page": 0,
+      "ms": 33678
+    },
+    {
+      "label": "Library \u2014 collections",
+      "tap": [
+        276,
+        108
+      ],
+      "wait": 1.8,
+      "expect_page": 9,
+      "ms": 35378
+    },
+    {
+      "label": "Abhishekagni \u2014 folders",
+      "tap": [
+        180,
+        107
+      ],
+      "wait": 1.8,
+      "expect_page": 9,
+      "ms": 37460
+    },
+    {
+      "label": "Episodes 001\u2013100",
+      "tap": [
+        180,
+        170
+      ],
+      "wait": 1.8,
+      "expect_page": 9,
+      "ms": 39531
+    },
+    {
+      "label": "Browse episodes",
+      "scroll": 200,
+      "wait": 1.8,
+      "ms": 41645
+    },
+    {
+      "label": "Return to episode folders",
+      "tap": [
+        180,
+        322
+      ],
+      "wait": 1.5,
+      "expect_page": 9,
+      "ms": 43902
+    },
+    {
+      "label": "Return to Library",
+      "tap": [
+        180,
+        322
+      ],
+      "wait": 1.5,
+      "expect_page": 9,
+      "ms": 45647
+    },
+    {
+      "label": "Songs collection",
+      "scroll": 64,
+      "wait": 1.8,
+      "ms": 47372
+    },
+    {
+      "label": "Songs \u2014 large music library",
+      "tap": [
+        180,
+        234
+      ],
+      "wait": 1.8,
+      "expect_page": 9,
+      "ms": 49625
+    },
+    {
+      "label": "Library alphabet shortcut",
+      "tap": [
+        180,
+        170
+      ],
+      "expect_page": 9,
+      "wait": 2,
+      "ms": 51948
+    },
+    {
+      "label": "Browse alphabet choices",
+      "scroll": 118,
+      "wait": 1.8,
+      "ms": 54241
+    },
+    {
+      "label": "Close alphabet choices",
+      "tap": [
+        180,
+        350
+      ],
+      "expect_page": 9,
+      "wait": 1.5,
+      "ms": 56518
+    },
+    {
+      "label": "Browse songs smoothly",
+      "scroll": 210,
+      "wait": 1.8,
+      "ms": 58163
+    },
+    {
+      "label": "Return to Library",
+      "tap": [
+        180,
+        322
+      ],
+      "wait": 1.5,
+      "expect_page": 9,
+      "ms": 60420
+    },
+    {
+      "label": "Return Home",
+      "tap": [
+        180,
+        322
+      ],
+      "wait": 1.5,
+      "expect_page": 0,
+      "ms": 62141
+    },
+    {
+      "label": "Favourites \u2014 saved collections",
+      "tap": [
+        180,
+        204
+      ],
+      "wait": 1.8,
+      "expect_page": 10,
+      "ms": 63836
+    },
+    {
+      "label": "Saved Bible passages",
+      "tap": [
+        180,
+        108
+      ],
+      "wait": 1.8,
+      "expect_page": 4,
+      "ms": 65875
+    },
+    {
+      "label": "Edit saved passages",
+      "tap": [
+        180,
+        107
+      ],
+      "wait": 1.8,
+      "expect_page": 4,
+      "ms": 67933
+    },
+    {
+      "label": "Remove confirmation",
+      "tap": [
+        289,
+        181
+      ],
+      "wait": 1.8,
+      "expect_page": 4,
+      "ms": 69971
+    },
+    {
+      "label": "Cancel \u2014 keep the favourite",
+      "tap": [
+        180,
+        225
+      ],
+      "wait": 1.8,
+      "expect_page": 4,
+      "ms": 71976
+    },
+    {
+      "label": "Finish editing",
+      "tap": [
+        180,
+        107
+      ],
+      "wait": 1.8,
+      "expect_page": 4,
+      "ms": 73963
+    },
+    {
+      "label": "Play a saved passage",
+      "tap": [
+        115,
+        180
+      ],
+      "wait": 1.2,
+      "expect_page": 3,
+      "ms": 75992
+    },
+    {
+      "label": "Pause playback",
+      "tap": [
+        180,
+        204
+      ],
+      "wait": 1.8,
+      "expect_page": 3,
+      "ms": 77440
+    },
+    {
+      "label": "Favourite is already saved",
+      "tap": [
+        307,
+        204
+      ],
+      "wait": 1.8,
+      "expect_page": 3,
+      "ms": 79403
+    },
+    {
+      "label": "Cancel \u2014 keep it saved",
+      "tap": [
+        180,
+        225
+      ],
+      "wait": 1.8,
+      "expect_page": 3,
+      "ms": 81424
+    },
+    {
+      "label": "Sleep timer choices",
+      "tap": [
+        52,
+        204
+      ],
+      "wait": 1.8,
+      "expect_page": 3,
+      "ms": 83419
+    },
+    {
+      "label": "Set a 15-minute sleep timer",
+      "tap": [
+        180,
+        194
+      ],
+      "wait": 1.8,
+      "expect_page": 3,
+      "ms": 85462
+    },
+    {
+      "label": "Filled heart and active sleep indicator",
+      "wait": 2,
+      "ms": 87459
+    },
+    {
+      "label": "Review the active timer",
+      "tap": [
+        52,
+        204
+      ],
+      "wait": 1.8,
+      "expect_page": 3,
+      "ms": 89459
+    },
+    {
+      "label": "More sleep timer durations",
+      "scroll": 180,
+      "wait": 1.8,
+      "ms": 91502
+    },
+    {
+      "label": "Dismiss timer choices",
+      "tap": [
+        180,
+        350
+      ],
+      "wait": 1.8,
+      "expect_page": 3,
+      "ms": 93761
+    },
+    {
+      "label": "Return to timer choices",
+      "tap": [
+        52,
+        204
+      ],
+      "wait": 1.8,
+      "expect_page": 3,
+      "ms": 95704
+    },
+    {
+      "label": "Timer Off",
+      "scroll": 0,
+      "wait": 1.8,
+      "ms": 97745
+    },
+    {
+      "label": "Turn the demonstration timer off",
+      "tap": [
+        180,
+        132
+      ],
+      "wait": 1.8,
+      "expect_page": 3,
+      "ms": 99997
+    },
+    {
+      "label": "Return to saved passages",
+      "tap": [
+        180,
+        322
+      ],
+      "wait": 1.5,
+      "expect_page": 4,
+      "ms": 101996
+    },
+    {
+      "label": "Return to Favourites",
+      "tap": [
+        180,
+        322
+      ],
+      "wait": 1.5,
+      "expect_page": 10,
+      "ms": 103719
+    },
+    {
+      "label": "Bible in a Year favourites",
+      "tap": [
+        180,
+        170
+      ],
+      "wait": 1.8,
+      "expect_page": 4,
+      "ms": 105484
+    },
+    {
+      "label": "Return to Favourites",
+      "tap": [
+        180,
+        322
+      ],
+      "wait": 1.5,
+      "expect_page": 10,
+      "ms": 107490
+    },
+    {
+      "label": "Library favourites",
+      "tap": [
+        180,
+        234
+      ],
+      "wait": 1.8,
+      "expect_page": 4,
+      "ms": 109188
+    },
+    {
+      "label": "Return to Favourites",
+      "tap": [
+        180,
+        322
+      ],
+      "wait": 1.5,
+      "expect_page": 10,
+      "ms": 111237
+    },
+    {
+      "label": "Return Home",
+      "tap": [
+        180,
+        322
+      ],
+      "wait": 1.5,
+      "expect_page": 0,
+      "ms": 112941
+    },
+    {
+      "label": "Recent listening",
+      "tap": [
+        84,
+        204
+      ],
+      "wait": 1.8,
+      "expect_page": 8,
+      "ms": 114641
+    },
+    {
+      "label": "Browse recent listening",
+      "scroll": 170,
+      "wait": 1.8,
+      "ms": 116751
+    },
+    {
+      "label": "Return Home",
+      "tap": [
+        180,
+        322
+      ],
+      "wait": 1.5,
+      "expect_page": 0,
+      "ms": 119030
+    },
+    {
+      "label": "Settings",
+      "tap": [
+        276,
+        204
+      ],
+      "wait": 1.8,
+      "expect_page": 5,
+      "ms": 120731
+    },
+    {
+      "label": "Available Bible versions",
+      "tap": [
+        180,
+        157
+      ],
+      "wait": 1.8,
+      "expect_page": 5,
+      "ms": 122878
+    },
+    {
+      "label": "Close version choices",
+      "tap": [
+        180,
+        350
+      ],
+      "wait": 1.8,
+      "expect_page": 5,
+      "ms": 124885
+    },
+    {
+      "label": "Loop and swipe preferences",
+      "scroll": 157,
+      "wait": 1.8,
+      "ms": 126795
+    },
+    {
+      "label": "Screen timeout",
+      "scroll": 314,
+      "wait": 1.8,
+      "ms": 129046
+    },
+    {
+      "label": "Screen timeout choices",
+      "tap": [
+        180,
+        246
+      ],
+      "wait": 1.8,
+      "expect_page": 5,
+      "ms": 131301
+    },
+    {
+      "label": "More screen timeout choices",
+      "scroll": 140,
+      "wait": 1.8,
+      "ms": 133325
+    },
+    {
+      "label": "Close timeout choices",
+      "tap": [
+        180,
+        350
+      ],
+      "wait": 1.8,
+      "expect_page": 5,
+      "ms": 135578
+    },
+    {
+      "label": "Auto power-off",
+      "scroll": 471,
+      "wait": 1.8,
+      "ms": 137511
+    },
+    {
+      "label": "Auto power-off choices",
+      "tap": [
+        180,
+        228
+      ],
+      "wait": 1.8,
+      "expect_page": 5,
+      "ms": 139766
+    },
+    {
+      "label": "More power-off choices",
+      "scroll": 125,
+      "wait": 1.8,
+      "ms": 141789
+    },
+    {
+      "label": "Close power-off choices",
+      "tap": [
+        180,
+        350
+      ],
+      "wait": 1.8,
+      "expect_page": 5,
+      "ms": 144046
+    },
+    {
+      "label": "Theme colours",
+      "scroll": 628,
+      "wait": 1.8,
+      "ms": 145981
+    },
+    {
+      "label": "Played history",
+      "scroll": 785,
+      "wait": 1.8,
+      "ms": 148251
+    },
+    {
+      "label": "Clear history confirmation",
+      "tap": [
+        180,
+        232
+      ],
+      "wait": 1.8,
+      "expect_page": 5,
+      "ms": 150507
+    },
+    {
+      "label": "Cancel \u2014 preserve listening history",
+      "tap": [
+        180,
+        225
+      ],
+      "wait": 1.8,
+      "expect_page": 5,
+      "ms": 152507
+    },
+    {
+      "label": "Home \u2014 end of tour",
+      "tap": [
+        180,
+        322
+      ],
+      "wait": 3,
+      "expect_page": 0,
+      "ms": 154494
+    }
+  ],
+  "captured_frames": 336,
+  "dropped_frames": 0
+}

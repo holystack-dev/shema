@@ -8,6 +8,7 @@ extern "C" {
 
 typedef void (*power_btn_cb_t)(void);
 typedef void (*display_sleep_cb_t)(bool sleep);
+typedef void (*display_powerdown_cb_t)(void);
 
 // Inits TCA9554 (power latch + speaker amp), ADC (battery), buttons, backlight.
 // Must be called after i2c_master_Init() and after app_store_init().
@@ -15,6 +16,12 @@ void app_power_init(void);
 
 int   app_power_battery_pct(void);     // 0..100
 float app_power_battery_volts(void);
+// True once the pack is near empty. The device also powers itself off automatically a
+// little below this, to stop the cell being run down to its protection trip.
+bool  app_power_battery_low(void);
+// Inferred, not sensed: no charge-status line is wired to a GPIO, so this is derived
+// from the pack sitting above a rested cell's ceiling or the voltage trending upward.
+bool  app_power_is_charging(void);
 
 void app_power_set_brightness(int pct); // 0..100 (persisted by caller)
 
@@ -36,6 +43,10 @@ void app_power_set_amp(bool on);
 
 // Hook to blank/restore the display on screen auto-off (e.g. bible_display_sleep).
 void app_power_set_display_sleep_cb(display_sleep_cb_t cb);
+
+// Hook to fully power the panel controller down before deep sleep (e.g.
+// bible_display_power_down). Without it the panel keeps drawing mA while "off".
+void app_power_set_display_powerdown_cb(display_powerdown_cb_t cb);
 
 #ifdef __cplusplus
 }

@@ -12,10 +12,11 @@ CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
 
 # --- FATFS long filenames (REQUIRED) ---
-# The SD layout is BIBLE/<LANG>/<VERSION>, e.g. Malayalam/POC_Dramatized. Without
-# LFN, readdir() returns 8.3 names (MALAYA~1) and the version scan / default-version
-# match in app_ui/app_player break. UTF-8 API encoding is set explicitly because the
-# FATFS default is ANSI/OEM, which would mangle any non-ASCII folder name.
+# The SD layout is BIBLE/<LANG>/<VERSION> (e.g. Malayalam/POC_Dramatized) plus
+# BIY/<EN|ML>/ "Day NNN - title.mp3". Without LFN, readdir() returns 8.3 names
+# (MALAYA~1) and the version scan / BIY title match in app_ui/app_player break.
+# UTF-8 API encoding is set explicitly because the FATFS default is ANSI/OEM, which
+# would mangle non-ASCII folder/file names. Card must be FAT32 (no exFAT in FATFS).
 CONFIG_FATFS_LFN_HEAP=y
 CONFIG_FATFS_MAX_LFN=255
 CONFIG_FATFS_API_ENCODING_UTF_8=y
@@ -28,6 +29,8 @@ CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
 
 # --- LVGL 8.x ---
 CONFIG_LV_COLOR_16_SWAP=y
+# Virtual lists can exceed the 8191px limit of LVGL's small coordinate encoding.
+CONFIG_LV_USE_LARGE_COORD=y
 CONFIG_LV_MEM_CUSTOM=y
 CONFIG_LV_MEMCPY_MEMSET_STD=y
 CONFIG_LV_ATTRIBUTE_FAST_MEM_USE_IRAM=y

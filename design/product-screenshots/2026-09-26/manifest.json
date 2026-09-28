@@ -1,0 +1,642 @@
+[
+  {
+    "scene": "home",
+    "file": "home.png",
+    "scroll_y": 0,
+    "fixture": false,
+    "label": "Home",
+    "status": "captured"
+  },
+  {
+    "scene": "books-old",
+    "file": "books-old-01.png",
+    "scroll_y": 0,
+    "fixture": false,
+    "label": "Books Old 01",
+    "status": "captured"
+  },
+  {
+    "scene": "books-old",
+    "file": "books-old-02.png",
+    "scroll_y": 653,
+    "fixture": false,
+    "label": "Books Old 02",
+    "status": "captured"
+  },
+  {
+    "scene": "books-old",
+    "file": "books-old-03.png",
+    "scroll_y": 1306,
+    "fixture": false,
+    "label": "Books Old 03",
+    "status": "captured"
+  },
+  {
+    "scene": "books-new",
+    "file": "books-new-01.png",
+    "scroll_y": 0,
+    "fixture": false,
+    "label": "Books New 01",
+    "status": "captured"
+  },
+  {
+    "scene": "books-new",
+    "file": "books-new-02.png",
+    "scroll_y": 365,
+    "fixture": false,
+    "label": "Books New 02",
+    "status": "captured"
+  },
+  {
+    "scene": "books-new",
+    "file": "books-new-03.png",
+    "scroll_y": 730,
+    "fixture": false,
+    "label": "Books New 03",
+    "status": "captured"
+  },
+  {
+    "scene": "chapters",
+    "file": "chapters-01.png",
+    "scroll_y": 0,
+    "fixture": false,
+    "label": "Chapters 01",
+    "status": "captured"
+  },
+  {
+    "scene": "chapters",
+    "file": "chapters-02.png",
+    "scroll_y": 372,
+    "fixture": false,
+    "label": "Chapters 02",
+    "status": "captured"
+  },
+  {
+    "scene": "chapters",
+    "file": "chapters-03.png",
+    "scroll_y": 744,
+    "fixture": false,
+    "label": "Chapters 03",
+    "status": "captured"
+  },
+  {
+    "scene": "psalms",
+    "file": "psalms-01.png",
+    "scroll_y": 0,
+    "fixture": false,
+    "label": "Psalms 01",
+    "status": "captured"
+  },
+  {
+    "scene": "psalms",
+    "file": "psalms-02.png",
+    "scroll_y": 1272,
+    "fixture": false,
+    "label": "Psalms 02",
+    "status": "captured"
+  },
+  {
+    "scene": "psalms",
+    "file": "psalms-03.png",
+    "scroll_y": 2544,
+    "fixture": false,
+    "label": "Psalms 03",
+    "status": "captured"
+  },
+  {
+    "scene": "player",
+    "file": "player.png",
+    "scroll_y": 0,
+    "fixture": false,
+    "label": "Player",
+    "status": "captured"
+  },
+  {
+    "scene": "sleep",
+    "file": "sleep-01.png",
+    "scroll_y": 0,
+    "fixture": false,
+    "label": "Sleep 01",
+    "status": "captured"
+  },
+  {
+    "scene": "sleep",
+    "file": "sleep-02.png",
+    "scroll_y": 125,
+    "fixture": false,
+    "label": "Sleep 02",
+    "status": "captured"
+  },
+  {
+    "scene": "sleep",
+    "file": "sleep-03.png",
+    "scroll_y": 248,
+    "fixture": false,
+    "label": "Sleep 03",
+    "status": "captured"
+  },
+  {
+    "scene": "favourites",
+    "file": "favourites.png",
+    "scroll_y": 0,
+    "fixture": false,
+    "label": "Favourites",
+    "status": "captured"
+  },
+  {
+    "scene": "saved-bible",
+    "file": "saved-bible-01.png",
+    "scroll_y": 0,
+    "fixture": false,
+    "label": "Saved Bible 01",
+    "status": "captured"
+  },
+  {
+    "scene": "saved-bible",
+    "file": "saved-bible-02.png",
+    "scroll_y": 37,
+    "fixture": false,
+    "label": "Saved Bible 02",
+    "status": "captured"
+  },
+  {
+    "scene": "saved-bible",
+    "file": "saved-bible-03.png",
+    "scroll_y": 74,
+    "fixture": false,
+    "label": "Saved Bible 03",
+    "status": "captured"
+  },
+  {
+    "scene": "saved-edit",
+    "file": "saved-edit-01.png",
+    "scroll_y": 0,
+    "fixture": false,
+    "label": "Saved Edit 01",
+    "status": "captured"
+  },
+  {
+    "scene": "saved-edit",
+    "file": "saved-edit-02.png",
+    "scroll_y": 73,
+    "fixture": false,
+    "label": "Saved Edit 02",
+    "status": "captured"
+  },
+  {
+    "scene": "saved-edit",
+    "file": "saved-edit-03.png",
+    "scroll_y": 146,
+    "fixture": false,
+    "label": "Saved Edit 03",
+    "status": "captured"
+  },
+  {
+    "scene": "saved-remove",
+    "file": "saved-remove.png",
+    "scroll_y": 0,
+    "fixture": false,
+    "label": "Saved Remove",
+    "status": "captured"
+  },
+  {
+    "scene": "saved-year",
+    "file": "saved-year.png",
+    "scroll_y": 0,
+    "fixture": false,
+    "label": "Saved Year",
+    "status": "captured"
+  },
+  {
+    "scene": "saved-library",
+    "file": "saved-library.png",
+    "scroll_y": 0,
+    "fixture": false,
+    "label": "Saved Library",
+    "status": "captured"
+  },
+  {
+    "scene": "recent",
+    "file": "recent-01.png",
+    "scroll_y": 0,
+    "fixture": false,
+    "label": "Recent 01",
+    "status": "captured"
+  },
+  {
+    "scene": "recent",
+    "file": "recent-02.png",
+    "scroll_y": 1464,
+    "fixture": false,
+    "label": "Recent 02",
+    "status": "captured"
+  },
+  {
+    "scene": "recent",
+    "file": "recent-03.png",
+    "scroll_y": 2928,
+    "fixture": false,
+    "label": "Recent 03",
+    "status": "captured"
+  },
+  {
+    "scene": "year",
+    "file": "year-01.png",
+    "scroll_y": 0,
+    "fixture": false,
+    "label": "Year 01",
+    "status": "captured"
+  },
+  {
+    "scene": "year",
+    "file": "year-02.png",
+    "scroll_y": 428,
+    "fixture": false,
+    "label": "Year 02",
+    "status": "captured"
+  },
+  {
+    "scene": "year",
+    "file": "year-03.png",
+    "scroll_y": 856,
+    "fixture": false,
+    "label": "Year 03",
+    "status": "captured"
+  },
+  {
+    "scene": "year-days",
+    "file": "year-days-01.png",
+    "scroll_y": 0,
+    "fixture": false,
+    "label": "Year Days 01",
+    "status": "captured"
+  },
+  {
+    "scene": "year-days",
+    "file": "year-days-02.png",
+    "scroll_y": 160,
+    "fixture": false,
+    "label": "Year Days 02",
+    "status": "captured"
+  },
+  {
+    "scene": "year-days",
+    "file": "year-days-03.png",
+    "scroll_y": 321,
+    "fixture": false,
+    "label": "Year Days 03",
+    "status": "captured"
+  },
+  {
+    "scene": "year-intros",
+    "file": "year-intros.png",
+    "scroll_y": 0,
+    "fixture": false,
+    "label": "Year Intros",
+    "status": "captured"
+  },
+  {
+    "scene": "library",
+    "file": "library-01.png",
+    "scroll_y": 0,
+    "fixture": false,
+    "label": "Library 01",
+    "status": "captured"
+  },
+  {
+    "scene": "library",
+    "file": "library-02.png",
+    "scroll_y": 32,
+    "fixture": false,
+    "label": "Library 02",
+    "status": "captured"
+  },
+  {
+    "scene": "library",
+    "file": "library-03.png",
+    "scroll_y": 64,
+    "fixture": false,
+    "label": "Library 03",
+    "status": "captured"
+  },
+  {
+    "scene": "library-folder",
+    "file": "library-folder-01.png",
+    "scroll_y": 0,
+    "fixture": false,
+    "label": "Library Folder 01",
+    "status": "captured"
+  },
+  {
+    "scene": "library-folder",
+    "file": "library-folder-02.png",
+    "scroll_y": 96,
+    "fixture": false,
+    "label": "Library Folder 02",
+    "status": "captured"
+  },
+  {
+    "scene": "library-folder",
+    "file": "library-folder-03.png",
+    "scroll_y": 192,
+    "fixture": false,
+    "label": "Library Folder 03",
+    "status": "captured"
+  },
+  {
+    "scene": "library-nested",
+    "file": "library-nested-01.png",
+    "scroll_y": 0,
+    "fixture": false,
+    "label": "Library Nested 01",
+    "status": "captured"
+  },
+  {
+    "scene": "library-nested",
+    "file": "library-nested-02.png",
+    "scroll_y": 2624,
+    "fixture": false,
+    "label": "Library Nested 02",
+    "status": "captured"
+  },
+  {
+    "scene": "library-nested",
+    "file": "library-nested-03.png",
+    "scroll_y": 5248,
+    "fixture": false,
+    "label": "Library Nested 03",
+    "status": "captured"
+  },
+  {
+    "scene": "letters",
+    "file": "letters-01.png",
+    "scroll_y": 0,
+    "fixture": false,
+    "label": "Letters 01",
+    "status": "captured"
+  },
+  {
+    "scene": "letters",
+    "file": "letters-02.png",
+    "scroll_y": 155,
+    "fixture": false,
+    "label": "Letters 02",
+    "status": "captured"
+  },
+  {
+    "scene": "letters",
+    "file": "letters-03.png",
+    "scroll_y": 162,
+    "fixture": false,
+    "label": "Letters 03",
+    "status": "captured"
+  },
+  {
+    "scene": "settings",
+    "file": "settings-01.png",
+    "scroll_y": 0,
+    "fixture": false,
+    "label": "Settings 01",
+    "status": "captured"
+  },
+  {
+    "scene": "settings",
+    "file": "settings-02.png",
+    "scroll_y": 157,
+    "fixture": false,
+    "label": "Settings 02",
+    "status": "captured"
+  },
+  {
+    "scene": "settings",
+    "file": "settings-03.png",
+    "scroll_y": 314,
+    "fixture": false,
+    "label": "Settings 03",
+    "status": "captured"
+  },
+  {
+    "scene": "settings",
+    "file": "settings-04.png",
+    "scroll_y": 471,
+    "fixture": false,
+    "label": "Settings 04",
+    "status": "captured"
+  },
+  {
+    "scene": "settings",
+    "file": "settings-05.png",
+    "scroll_y": 628,
+    "fixture": false,
+    "label": "Settings 05",
+    "status": "captured"
+  },
+  {
+    "scene": "settings",
+    "file": "settings-06.png",
+    "scroll_y": 785,
+    "fixture": false,
+    "label": "Settings 06",
+    "status": "captured"
+  },
+  {
+    "scene": "settings",
+    "file": "settings-07.png",
+    "scroll_y": 862,
+    "fixture": false,
+    "label": "Settings 07",
+    "status": "captured"
+  },
+  {
+    "scene": "versions",
+    "file": "versions.png",
+    "scroll_y": 0,
+    "fixture": false,
+    "label": "Versions",
+    "status": "captured"
+  },
+  {
+    "scene": "screen-timeout",
+    "file": "screen-timeout-01.png",
+    "scroll_y": 0,
+    "fixture": false,
+    "label": "Screen Timeout 01",
+    "status": "captured"
+  },
+  {
+    "scene": "screen-timeout",
+    "file": "screen-timeout-02.png",
+    "scroll_y": 125,
+    "fixture": false,
+    "label": "Screen Timeout 02",
+    "status": "captured"
+  },
+  {
+    "scene": "screen-timeout",
+    "file": "screen-timeout-03.png",
+    "scroll_y": 186,
+    "fixture": false,
+    "label": "Screen Timeout 03",
+    "status": "captured"
+  },
+  {
+    "scene": "power-off",
+    "file": "power-off-01.png",
+    "scroll_y": 0,
+    "fixture": false,
+    "label": "Power Off 01",
+    "status": "captured"
+  },
+  {
+    "scene": "power-off",
+    "file": "power-off-02.png",
+    "scroll_y": 124,
+    "fixture": false,
+    "label": "Power Off 02",
+    "status": "captured"
+  },
+  {
+    "scene": "history-clear",
+    "file": "history-clear.png",
+    "scroll_y": 0,
+    "fixture": false,
+    "label": "History Clear",
+    "status": "captured"
+  },
+  {
+    "scene": "splash",
+    "file": "splash.png",
+    "scroll_y": 0,
+    "fixture": false,
+    "label": "Splash",
+    "status": "captured"
+  },
+  {
+    "scene": "preview-no-card",
+    "file": "preview-no-card.png",
+    "scroll_y": 0,
+    "fixture": true,
+    "label": "Preview No Card",
+    "status": "captured"
+  },
+  {
+    "scene": "preview-empty-favourites",
+    "file": "preview-empty-favourites.png",
+    "scroll_y": 0,
+    "fixture": true,
+    "label": "Preview Empty Favourites",
+    "status": "captured"
+  },
+  {
+    "scene": "preview-empty-saved",
+    "file": "preview-empty-saved.png",
+    "scroll_y": 0,
+    "fixture": true,
+    "label": "Preview Empty Saved",
+    "status": "captured"
+  },
+  {
+    "scene": "preview-empty-recent",
+    "file": "preview-empty-recent.png",
+    "scroll_y": 0,
+    "fixture": true,
+    "label": "Preview Empty Recent",
+    "status": "captured"
+  },
+  {
+    "scene": "preview-empty-library",
+    "file": "preview-empty-library.png",
+    "scroll_y": 0,
+    "fixture": true,
+    "label": "Preview Empty Library",
+    "status": "captured"
+  },
+  {
+    "scene": "preview-empty-settings",
+    "file": "preview-empty-settings-01.png",
+    "scroll_y": 0,
+    "fixture": true,
+    "label": "Preview Empty Settings 01",
+    "status": "captured"
+  },
+  {
+    "scene": "preview-empty-settings",
+    "file": "preview-empty-settings-02.png",
+    "scroll_y": 157,
+    "fixture": true,
+    "label": "Preview Empty Settings 02",
+    "status": "captured"
+  },
+  {
+    "scene": "preview-empty-settings",
+    "file": "preview-empty-settings-03.png",
+    "scroll_y": 314,
+    "fixture": true,
+    "label": "Preview Empty Settings 03",
+    "status": "captured"
+  },
+  {
+    "scene": "preview-empty-settings",
+    "file": "preview-empty-settings-04.png",
+    "scroll_y": 471,
+    "fixture": true,
+    "label": "Preview Empty Settings 04",
+    "status": "captured"
+  },
+  {
+    "scene": "preview-empty-settings",
+    "file": "preview-empty-settings-05.png",
+    "scroll_y": 628,
+    "fixture": true,
+    "label": "Preview Empty Settings 05",
+    "status": "captured"
+  },
+  {
+    "scene": "preview-empty-settings",
+    "file": "preview-empty-settings-06.png",
+    "scroll_y": 785,
+    "fixture": true,
+    "label": "Preview Empty Settings 06",
+    "status": "captured"
+  },
+  {
+    "scene": "preview-empty-settings",
+    "file": "preview-empty-settings-07.png",
+    "scroll_y": 862,
+    "fixture": true,
+    "label": "Preview Empty Settings 07",
+    "status": "captured"
+  },
+  {
+    "scene": "preview-player-playing",
+    "file": "preview-player-playing.png",
+    "scroll_y": 0,
+    "fixture": true,
+    "label": "Preview Player Playing",
+    "status": "captured"
+  },
+  {
+    "scene": "preview-player-paused",
+    "file": "preview-player-paused.png",
+    "scroll_y": 0,
+    "fixture": true,
+    "label": "Preview Player Paused",
+    "status": "captured"
+  },
+  {
+    "scene": "preview-player-year",
+    "file": "preview-player-year.png",
+    "scroll_y": 0,
+    "fixture": true,
+    "label": "Preview Player Year",
+    "status": "captured"
+  },
+  {
+    "scene": "preview-player-library",
+    "file": "preview-player-library.png",
+    "scroll_y": 0,
+    "fixture": true,
+    "label": "Preview Player Library",
+    "status": "captured"
+  }
+]

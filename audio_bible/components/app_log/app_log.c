@@ -80,7 +80,7 @@ void app_log_flush(void)
     // Serialise the entire flush. Both the background flush_task (core 0) and
     // app_power_off() (core 1) call this, and snap/file_bytes/in_flush and the file
     // append/rotate are shared — not just the ring — so one mutex must cover it all
-    // or the two paths interleave and corrupt the log (F-11).
+    // or the two paths interleave and corrupt the log.
     xSemaphoreTake(flush_mux, portMAX_DELAY);
 
     xSemaphoreTake(r_mux, portMAX_DELAY);
@@ -118,7 +118,7 @@ void app_log_flush(void)
 
 // Write the tail and then hold the flush lock, so no background flush can be mid-fwrite
 // while the caller unmounts the SD card before deep sleep. Deliberately not released —
-// the device is going to sleep (F-12).
+// the device is going to sleep.
 void app_log_suspend(void)
 {
     app_log_flush();

@@ -1,0 +1,618 @@
+[
+  {
+    "label": "Home — six direct destinations",
+    "wait": 2.5
+  },
+  {
+    "label": "Bible — browse books",
+    "tap": [
+      84,
+      108
+    ],
+    "wait": 1.8,
+    "expect_page": 1
+  },
+  {
+    "label": "Old Testament",
+    "tap": [
+      100,
+      64
+    ],
+    "expect_page": 1,
+    "wait": 1
+  },
+  {
+    "label": "Start at Genesis",
+    "scroll": 0,
+    "wait": 1
+  },
+  {
+    "label": "Genesis — chapter grid",
+    "tap": [
+      105,
+      146
+    ],
+    "wait": 1.8,
+    "expect_page": 2
+  },
+  {
+    "label": "Browse later chapters",
+    "scroll": 180,
+    "wait": 1.8
+  },
+  {
+    "label": "Return to books",
+    "tap": [
+      180,
+      322
+    ],
+    "wait": 1.5,
+    "expect_page": 1
+  },
+  {
+    "label": "New Testament",
+    "tap": [
+      260,
+      64
+    ],
+    "wait": 1.8,
+    "expect_page": 1
+  },
+  {
+    "label": "More New Testament books",
+    "scroll": 190,
+    "wait": 1.8
+  },
+  {
+    "label": "Return Home",
+    "tap": [
+      180,
+      322
+    ],
+    "wait": 1.5,
+    "expect_page": 0
+  },
+  {
+    "label": "Bible in a Year — periods",
+    "tap": [
+      180,
+      108
+    ],
+    "wait": 1.8,
+    "expect_page": 6
+  },
+  {
+    "label": "Early World — daily listening",
+    "tap": [
+      180,
+      110
+    ],
+    "wait": 1.8,
+    "expect_page": 7
+  },
+  {
+    "label": "Browse the days",
+    "scroll": 165,
+    "wait": 1.8
+  },
+  {
+    "label": "Return to periods",
+    "tap": [
+      180,
+      322
+    ],
+    "wait": 1.5,
+    "expect_page": 6
+  },
+  {
+    "label": "Later periods and introductions",
+    "scroll": 856,
+    "wait": 1.8
+  },
+  {
+    "label": "Intros and Checkpoints",
+    "tap": [
+      180,
+      235
+    ],
+    "wait": 1.8,
+    "expect_page": 7
+  },
+  {
+    "label": "Return to periods",
+    "tap": [
+      180,
+      322
+    ],
+    "wait": 1.5,
+    "expect_page": 6
+  },
+  {
+    "label": "Return Home",
+    "tap": [
+      180,
+      322
+    ],
+    "wait": 1.5,
+    "expect_page": 0
+  },
+  {
+    "label": "Library — collections",
+    "tap": [
+      276,
+      108
+    ],
+    "wait": 1.8,
+    "expect_page": 9
+  },
+  {
+    "label": "Abhishekagni — folders",
+    "tap": [
+      180,
+      107
+    ],
+    "wait": 1.8,
+    "expect_page": 9
+  },
+  {
+    "label": "Episodes 001–100",
+    "tap": [
+      180,
+      170
+    ],
+    "wait": 1.8,
+    "expect_page": 9
+  },
+  {
+    "label": "Browse episodes",
+    "scroll": 200,
+    "wait": 1.8
+  },
+  {
+    "label": "Return to episode folders",
+    "tap": [
+      180,
+      322
+    ],
+    "wait": 1.5,
+    "expect_page": 9
+  },
+  {
+    "label": "Return to Library",
+    "tap": [
+      180,
+      322
+    ],
+    "wait": 1.5,
+    "expect_page": 9
+  },
+  {
+    "label": "Songs collection",
+    "scroll": 64,
+    "wait": 1.8
+  },
+  {
+    "label": "Songs — large music library",
+    "tap": [
+      180,
+      234
+    ],
+    "wait": 1.8,
+    "expect_page": 9
+  },
+  {
+    "label": "Library alphabet shortcut",
+    "tap": [
+      180,
+      170
+    ],
+    "expect_page": 9,
+    "wait": 2
+  },
+  {
+    "label": "Browse alphabet choices",
+    "scroll": 118,
+    "wait": 1.8
+  },
+  {
+    "label": "Close alphabet choices",
+    "tap": [
+      180,
+      350
+    ],
+    "expect_page": 9,
+    "wait": 1.5
+  },
+  {
+    "label": "Browse songs smoothly",
+    "scroll": 210,
+    "wait": 1.8
+  },
+  {
+    "label": "Return to Library",
+    "tap": [
+      180,
+      322
+    ],
+    "wait": 1.5,
+    "expect_page": 9
+  },
+  {
+    "label": "Return Home",
+    "tap": [
+      180,
+      322
+    ],
+    "wait": 1.5,
+    "expect_page": 0
+  },
+  {
+    "label": "Favourites — saved collections",
+    "tap": [
+      180,
+      204
+    ],
+    "wait": 1.8,
+    "expect_page": 10
+  },
+  {
+    "label": "Saved Bible passages",
+    "tap": [
+      180,
+      108
+    ],
+    "wait": 1.8,
+    "expect_page": 4
+  },
+  {
+    "label": "Edit saved passages",
+    "tap": [
+      180,
+      107
+    ],
+    "wait": 1.8,
+    "expect_page": 4
+  },
+  {
+    "label": "Remove confirmation",
+    "tap": [
+      289,
+      181
+    ],
+    "wait": 1.8,
+    "expect_page": 4
+  },
+  {
+    "label": "Cancel — keep the favourite",
+    "tap": [
+      180,
+      225
+    ],
+    "wait": 1.8,
+    "expect_page": 4
+  },
+  {
+    "label": "Finish editing",
+    "tap": [
+      180,
+      107
+    ],
+    "wait": 1.8,
+    "expect_page": 4
+  },
+  {
+    "label": "Play a saved passage",
+    "tap": [
+      115,
+      180
+    ],
+    "wait": 1.2,
+    "expect_page": 3
+  },
+  {
+    "label": "Pause playback",
+    "tap": [
+      180,
+      204
+    ],
+    "wait": 1.8,
+    "expect_page": 3
+  },
+  {
+    "label": "Favourite is already saved",
+    "tap": [
+      307,
+      204
+    ],
+    "wait": 1.8,
+    "expect_page": 3
+  },
+  {
+    "label": "Cancel — keep it saved",
+    "tap": [
+      180,
+      225
+    ],
+    "wait": 1.8,
+    "expect_page": 3
+  },
+  {
+    "label": "Sleep timer choices",
+    "tap": [
+      52,
+      204
+    ],
+    "wait": 1.8,
+    "expect_page": 3
+  },
+  {
+    "label": "Set a 15-minute sleep timer",
+    "tap": [
+      180,
+      194
+    ],
+    "wait": 1.8,
+    "expect_page": 3
+  },
+  {
+    "label": "Filled heart and active sleep indicator",
+    "wait": 2
+  },
+  {
+    "label": "Review the active timer",
+    "tap": [
+      52,
+      204
+    ],
+    "wait": 1.8,
+    "expect_page": 3
+  },
+  {
+    "label": "More sleep timer durations",
+    "scroll": 180,
+    "wait": 1.8
+  },
+  {
+    "label": "Dismiss timer choices",
+    "tap": [
+      180,
+      350
+    ],
+    "wait": 1.8,
+    "expect_page": 3
+  },
+  {
+    "label": "Return to timer choices",
+    "tap": [
+      52,
+      204
+    ],
+    "wait": 1.8,
+    "expect_page": 3
+  },
+  {
+    "label": "Timer Off",
+    "scroll": 0,
+    "wait": 1.8
+  },
+  {
+    "label": "Turn the demonstration timer off",
+    "tap": [
+      180,
+      132
+    ],
+    "wait": 1.8,
+    "expect_page": 3
+  },
+  {
+    "label": "Return to saved passages",
+    "tap": [
+      180,
+      322
+    ],
+    "wait": 1.5,
+    "expect_page": 4
+  },
+  {
+    "label": "Return to Favourites",
+    "tap": [
+      180,
+      322
+    ],
+    "wait": 1.5,
+    "expect_page": 10
+  },
+  {
+    "label": "Bible in a Year favourites",
+    "tap": [
+      180,
+      170
+    ],
+    "wait": 1.8,
+    "expect_page": 4
+  },
+  {
+    "label": "Return to Favourites",
+    "tap": [
+      180,
+      322
+    ],
+    "wait": 1.5,
+    "expect_page": 10
+  },
+  {
+    "label": "Library favourites",
+    "tap": [
+      180,
+      234
+    ],
+    "wait": 1.8,
+    "expect_page": 4
+  },
+  {
+    "label": "Return to Favourites",
+    "tap": [
+      180,
+      322
+    ],
+    "wait": 1.5,
+    "expect_page": 10
+  },
+  {
+    "label": "Return Home",
+    "tap": [
+      180,
+      322
+    ],
+    "wait": 1.5,
+    "expect_page": 0
+  },
+  {
+    "label": "Recent listening",
+    "tap": [
+      84,
+      204
+    ],
+    "wait": 1.8,
+    "expect_page": 8
+  },
+  {
+    "label": "Browse recent listening",
+    "scroll": 170,
+    "wait": 1.8
+  },
+  {
+    "label": "Return Home",
+    "tap": [
+      180,
+      322
+    ],
+    "wait": 1.5,
+    "expect_page": 0
+  },
+  {
+    "label": "Settings",
+    "tap": [
+      276,
+      204
+    ],
+    "wait": 1.8,
+    "expect_page": 5
+  },
+  {
+    "label": "Available Bible versions",
+    "tap": [
+      180,
+      157
+    ],
+    "wait": 1.8,
+    "expect_page": 5
+  },
+  {
+    "label": "Close version choices",
+    "tap": [
+      180,
+      350
+    ],
+    "wait": 1.8,
+    "expect_page": 5
+  },
+  {
+    "label": "Loop and swipe preferences",
+    "scroll": 157,
+    "wait": 1.8
+  },
+  {
+    "label": "Screen timeout",
+    "scroll": 314,
+    "wait": 1.8
+  },
+  {
+    "label": "Screen timeout choices",
+    "tap": [
+      180,
+      246
+    ],
+    "wait": 1.8,
+    "expect_page": 5
+  },
+  {
+    "label": "More screen timeout choices",
+    "scroll": 140,
+    "wait": 1.8
+  },
+  {
+    "label": "Close timeout choices",
+    "tap": [
+      180,
+      350
+    ],
+    "wait": 1.8,
+    "expect_page": 5
+  },
+  {
+    "label": "Auto power-off",
+    "scroll": 471,
+    "wait": 1.8
+  },
+  {
+    "label": "Auto power-off choices",
+    "tap": [
+      180,
+      228
+    ],
+    "wait": 1.8,
+    "expect_page": 5
+  },
+  {
+    "label": "More power-off choices",
+    "scroll": 125,
+    "wait": 1.8
+  },
+  {
+    "label": "Close power-off choices",
+    "tap": [
+      180,
+      350
+    ],
+    "wait": 1.8,
+    "expect_page": 5
+  },
+  {
+    "label": "Theme colours",
+    "scroll": 628,
+    "wait": 1.8
+  },
+  {
+    "label": "Played history",
+    "scroll": 785,
+    "wait": 1.8
+  },
+  {
+    "label": "Clear history confirmation",
+    "tap": [
+      180,
+      232
+    ],
+    "wait": 1.8,
+    "expect_page": 5
+  },
+  {
+    "label": "Cancel — preserve listening history",
+    "tap": [
+      180,
+      225
+    ],
+    "wait": 1.8,
+    "expect_page": 5
+  },
+  {
+    "label": "Home — end of tour",
+    "tap": [
+      180,
+      322
+    ],
+    "wait": 3,
+    "expect_page": 0
+  }
+]
